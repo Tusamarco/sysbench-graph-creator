@@ -1,0 +1,42 @@
+@startuml
+'https://plantuml.com/class-diagram
+
+struct testCollection
+struct test
+struct run
+
+testCollection --|> test
+test --|> run
+
+
+
+Struct testCollection{
+date [yyyy/mm/dd]
+dimension [small/large]
+execution_time [seconds]
+name
+platform [mysql/ps/pxc/maria]
+version [platform version]
+tests [map of test; key testname]
+}
+
+
+Struct run{
+threads [thread#]
+results [map key labels; data float]
+}
+
+struct test {
+date [yyyy/mm/dd]
+dimension [small/large]
+execution_time [seconds]
+labels [list/array]
+name
+runs [map of run key #threads]
+testType [sysbench/tpcc/db3]
+threads [list/array]]
+type [read/write]
+}
+
+
+@enduml
