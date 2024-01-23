@@ -17,7 +17,7 @@ Struct dataFile{
     testname [string]
 }
 
-struct test1
+
 Struct testCollection{
 date [yyyy/mm/dd]
 dimension [small/large]
