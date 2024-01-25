@@ -80,12 +80,13 @@ func main() {
 	portingCommandOption(config)
 
 	//now the show begins
-	done, err1 := DO.GetFileList(config)
-	if err1 != nil || !done {
+	myArFiles, err1 := DO.GetFileList(config.Parser.SourceDataPath)
+	if err1 != nil {
 		log.Error(err1)
 		exitWithCode(1)
 	}
 
+	log.Debug(len(myArFiles))
 }
 func portingCommandOption(config global.Configuration) {
 	if sourcePath != "" {

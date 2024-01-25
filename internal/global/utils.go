@@ -304,14 +304,14 @@ func caseInsenstiveFieldByName(v reflect.Value, name string) reflect.Value {
 
 //====================================
 
-//stats structure
+// stats structure
 type PerfObject struct {
 	Name     string
 	Time     [2]int64
 	LogLevel log.Level
 }
 
-//perfomance settings and structure
+// perfomance settings and structure
 var Performance bool
 var PerformanceMapOrdered *OrderedPerfMap
 
@@ -376,4 +376,13 @@ func ReportPerformance() {
 			break
 		}
 	}
+}
+func ReturnDateFromString(stringDate string, stringFormat string) (error, time.Time) {
+
+	dateString := stringFormat
+	myDate, err := time.Parse(stringDate, dateString)
+	if err != nil {
+		return err, myDate
+	}
+	return nil, myDate
 }

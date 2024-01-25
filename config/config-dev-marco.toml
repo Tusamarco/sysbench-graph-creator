@@ -1,6 +1,6 @@
 #v.0.1.0
 [parser]
-sourceDataPath=""
+sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/processed/ps_vs_my_8034_iron/sysbench/"
 
 
 
