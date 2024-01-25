@@ -5,25 +5,29 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"os"
+	DO "sysbench-graph-creator/internal/dataObjects"
 	global "sysbench-graph-creator/internal/global"
 )
 
 var version = "0.1.0"
+
+var configFile string
+var configPath string
+var sourcePath string
+var destinationPath string
+var testName string
 
 func main() {
 	const (
 		Separator = string(os.PathSeparator)
 	)
 
-	var configFile string
-	var configPath string
-
 	//initialize help
 	help := new(global.HelpText)
 	help.Init()
 
 	//return version adn exit
-	if len(os.Args) > 1 &&
+	if len(os.Args) <= 1 &&
 		os.Args[1] == "--version" {
 		fmt.Println("Sysbench graph Creator version: ", version)
 		exitWithCode(0)
@@ -32,6 +36,9 @@ func main() {
 	//Manage config and parameters from conf file [start]
 	flag.StringVar(&configFile, "configfile", "", "Config file name for the script")
 	flag.StringVar(&configPath, "configpath", "", "Config file path")
+	flag.StringVar(&sourcePath, "sourcepath", "", "source path")
+	flag.StringVar(&destinationPath, "destinationpath", "", "destination path")
+	flag.StringVar(&testName, "testname", "", "name of the test")
 	//flag.StringVar(nil, "version", pxc_scheduler_handler_version, "version: ")
 
 	flag.Usage = func() {
@@ -69,7 +76,29 @@ func main() {
 		exitWithCode(1)
 	}
 
+	//commandline override config file
+	portingCommandOption(config)
+
+	//now the show begins
+	done, err1 := DO.GetFileList(config)
+	if err1 != nil || !done {
+		log.Error(err1)
+		exitWithCode(1)
+	}
+
 }
+func portingCommandOption(config global.Configuration) {
+	if sourcePath != "" {
+		config.Parser.SourceDataPath = sourcePath
+	}
+	if destinationPath != "" {
+		config.Render.DestinationPath = destinationPath
+	}
+	if testName != "" {
+		config.Global.TestName = testName
+	}
+}
+
 func exitWithCode(errorCode int) {
 	log.Debug("Exiting execution with code ", errorCode)
 	os.Exit(errorCode)

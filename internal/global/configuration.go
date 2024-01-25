@@ -8,7 +8,7 @@ import (
 
 // Global scheduler conf
 type GlobalDef struct {
-	Debug       bool
+	TestName    string //global test name ie: Percona Server VS MySQL
 	LogLevel    string
 	LogTarget   string // #stdout | file
 	LogFile     string //"/tmp/pscheduler"
@@ -20,7 +20,8 @@ type Parser struct {
 }
 
 type Render struct {
-	GraphType string `toml:graphType`
+	GraphType       string `toml:graphType`
+	DestinationPath string `toml:destinationPath`
 }
 
 // Main structure working as container for the configuration sections

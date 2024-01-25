@@ -1,13 +1,15 @@
-#v.1.4.4
+#v.0.1.0
 [parser]
 sourceDataPath=""
 
 
+
 [render]
 graphType="column"
-graphPath=""
+destinationPath=""
 
 [global]
+testName=""
 logLevel = "debug"
 logTarget = "stdout" #stdout | file
 logFile = "/Users/marcotusa/tmp/sysbench_graph_creator.log"
