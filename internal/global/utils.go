@@ -379,8 +379,7 @@ func ReportPerformance() {
 }
 func ReturnDateFromString(stringDate string, stringFormat string) (error, time.Time) {
 
-	dateString := stringFormat
-	myDate, err := time.Parse(stringDate, dateString)
+	myDate, err := time.Parse(stringFormat, stringDate)
 	if err != nil {
 		return err, myDate
 	}
