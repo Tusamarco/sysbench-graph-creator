@@ -3,6 +3,9 @@ package dataObjects
 const (
 	READ  = 0
 	WRITE = 1
+
+	PREWRITE  = 0
+	POSTWRITE = 1
 )
 
 type TestCollection struct {
@@ -17,14 +20,15 @@ type TestCollection struct {
 }
 
 type Test struct {
-	Date          string
-	Dimension     string //Dimension is Large/Small
-	ExecutionTime int64
-	Labels        []string
-	TestType      string //sysbench/tpcc/dbt3
-	Threads       []int
-	ActionType    int //
-	runs          map[int]run
+	Date            string
+	Dimension       string //Dimension is Large/Small
+	ExecutionTime   int64
+	Labels          []string
+	TestType        string //sysbench/tpcc/dbt3
+	Threads         []int
+	ActionType      int //
+	SelectPreWrites int
+	runs            map[int]run
 }
 
 type run struct {

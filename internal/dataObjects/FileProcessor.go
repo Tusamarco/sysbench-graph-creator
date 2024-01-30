@@ -1,17 +1,22 @@
 package dataObjects
 
 import (
-	"fmt"
+	"bufio"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
-	"time"
 )
 
-func GetFileList(path string) (error, []DataFile) {
-	var arDataFile []DataFile
+type FileProcessor struct {
+	arDataFile     []DataFile
+	arPathFiles    []string
+	testCollection []TestCollection
+}
+
+// This function will recursively look for summary files and collect them into an array of strings
+func (fileProc *FileProcessor) GetFileList(path string) error {
+	//var arDataFile []DataFile
 
 	err := filepath.Walk(path,
 		func(path string, info os.FileInfo, err error) error {
@@ -21,47 +26,54 @@ func GetFileList(path string) (error, []DataFile) {
 			if !info.IsDir() &&
 				strings.Contains(info.Name(), ".csv") &&
 				!strings.Contains(path, "/data/") {
-				limiter := ""
-				var myDataFile DataFile
-				myDataFile.FullPath = path
-				if strings.Contains(info.Name(), "_large_") {
-					limiter = "_large_"
-				} else {
-					limiter = "_small_"
-				}
-				if strings.Contains(path, "sysbench") {
-					myDataFile.Producer = "sysbench"
-				}
-				if strings.Contains(path, "tpcc") {
-					myDataFile.Producer = "tpcc"
-				}
-				if strings.Contains(path, "dbt3") {
-					myDataFile.Producer = "tpcc"
-				}
 
-				re := regexp.MustCompile(`(\d{4}-\d{2}-\d{1,2}_\d{2}_\d{2})`)
-				match := re.FindStringSubmatch(path)
+				fileProc.arPathFiles = append(fileProc.arPathFiles, path)
 
-				if match[0] != "" {
-					//strDate := match[1]
-					myDataFile.RunDate, err = time.Parse("2006-01-02_04_05", match[0])
-				}
+				//re := regexp.MustCompile(`(\d{4}-\d{2}-\d{1,2}_\d{2}_\d{2})`)
+				//match := re.FindStringSubmatch(path)
+				//
+				//if match[0] != "" {
+				//	//strDate := match[1]
+				//	myDataFile.RunDate, err = time.Parse("2006-01-02_04_05", match[0])
+				//}
 				//Global.ReturnDateFromString(match[1], "0000-12-23_00_00")
-				if err != nil {
-					log.Warnf("Parsing error ", err)
-					//return err
-				}
-				myDataFile.TestName = info.Name()[0:strings.Index(info.Name(), limiter)]
-				//myDataFile
-				fmt.Println(path, info.Size())
-				arDataFile = append(arDataFile, myDataFile)
 			}
 
 			return nil
 		})
 	if err != nil {
-		log.Println(err)
+		log.Error(err)
 	}
 
-	return err, arDataFile
+	return err
+}
+
+func (fileProc *FileProcessor) GetTestCollectionArray() ([]TestCollection, error) {
+
+	for i, path := range fileProc.arPathFiles {
+		log.Debugf("Processing file %d: %s", i+1, path)
+		file, err := os.Open(path)
+		if err != nil {
+			log.Error(err)
+			return fileProc.testCollection, nil
+		}
+		defer file.Close()
+
+		//Open file and loop in to lines for meta
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if len(line) > 1 {
+				if line[0:4] == "META" {
+					log.Debugf("META :%s", line)
+				}
+
+			}
+
+		}
+
+	}
+
+	return fileProc.testCollection, nil
+
 }
