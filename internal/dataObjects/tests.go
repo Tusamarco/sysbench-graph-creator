@@ -21,6 +21,8 @@ type TestCollection struct {
 	Tests           map[string]Test
 	ActionType      int //
 	SelectPreWrites int
+	HostDB          string
+	RunNumber       int
 }
 
 type Test struct {
