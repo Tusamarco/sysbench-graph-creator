@@ -22,6 +22,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
+	"io"
 	"os"
 	"reflect"
 	"runtime"
@@ -384,4 +385,38 @@ func ReturnDateFromString(stringDate string, stringFormat string) (error, time.T
 		return err, myDate
 	}
 	return nil, myDate
+}
+
+// quickly return the number of lines in a file counting end of lines
+func lineCount(path string) (int, error) {
+
+	file, err := os.Open(path)
+	if err != nil {
+		log.Error(err)
+		return 0, err
+	}
+	defer file.Close()
+
+	count := 0
+	buf := make([]byte, 8192)
+	for {
+		c, err := file.Read(buf)
+		if err != nil {
+			if err == io.EOF && c == 0 {
+				break
+			} else {
+				return 0, err
+			}
+		}
+		for _, b := range buf[:c] {
+			if b == '\n' {
+				count++
+			}
+		}
+		if err == io.EOF {
+			err = nil
+		}
+
+	}
+	return count, nil
 }
