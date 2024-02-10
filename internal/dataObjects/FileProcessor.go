@@ -43,6 +43,9 @@ func (fileProc *FileProcessor) GetFileList(path string) error {
 	return err
 }
 
+/*
+Function to pupulate the array in the fileparser with top objects TestCollection. Test collaction is the abstraction of the whole set of data existing in the file
+*/
 func (fileProc *FileProcessor) GetTestCollectionArray() ([]TestCollection, error) {
 
 	filesLength := len(fileProc.arPathFiles)
@@ -50,16 +53,7 @@ func (fileProc *FileProcessor) GetTestCollectionArray() ([]TestCollection, error
 	for i, path := range fileProc.arPathFiles {
 		log.Infof("Processing [%d] files. Analyzing file [%d/%d] path: %s", filesLength, i+1, filesLength, path)
 
-		file, err := os.Open(path)
-		if err != nil {
-			log.Error(err)
-			return fileProc.testCollectionAr, nil
-		}
-		defer file.Close()
-
-		//Open file and loop in to lines for meta
-		scanner := bufio.NewScanner(file)
-		testCollection, OK := fileProc.getTestCollectionData(*scanner, path)
+		testCollection, OK := fileProc.getTestCollectionData(path)
 		if !OK {
 			log.Errorf("Parsing Test Collection failed %s", path)
 		}
@@ -71,9 +65,19 @@ func (fileProc *FileProcessor) GetTestCollectionArray() ([]TestCollection, error
 
 }
 
-func (fileProc *FileProcessor) getTestCollectionData(scanner bufio.Scanner, path string) (TestCollection, bool) {
+/*
+ */
+func (fileProc *FileProcessor) getTestCollectionData(path string) (TestCollection, bool) {
 	testCollection := new(TestCollection)
 	//var err error
+	//Open file and loop in to lines for meta
+	file, err := os.Open(path)
+	if err != nil {
+		log.Error(err)
+	}
+
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
 
 	numberOfLines, err := global.LineCount(path)
 	if err != nil {
@@ -96,7 +100,7 @@ func (fileProc *FileProcessor) getTestCollectionData(scanner bufio.Scanner, path
 			}
 			//load meta and data for each specific test and add the tests
 			if strings.Contains(line, "META") && !metaTop {
-				if !testCollection.getTestMeta(line, path, scanner, barLine) {
+				if !testCollection.getTestMeta(line, path, *scanner, barLine) {
 					log.Error(fmt.Errorf("Cannot load Meta information for test"))
 				}
 
