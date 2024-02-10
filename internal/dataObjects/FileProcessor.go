@@ -32,15 +32,6 @@ func (fileProc *FileProcessor) GetFileList(path string) error {
 				!strings.Contains(info.Name(), "_warmup_") {
 
 				fileProc.arPathFiles = append(fileProc.arPathFiles, path)
-
-				//re := regexp.MustCompile(`(\d{4}-\d{2}-\d{1,2}_\d{2}_\d{2})`)
-				//match := re.FindStringSubmatch(path)
-				//
-				//if match[0] != "" {
-				//	//strDate := match[1]
-				//	myDataFile.RunDate, err = time.Parse("2006-01-02_04_05", match[0])
-				//}
-				//Global.ReturnDateFromString(match[1], "0000-12-23_00_00")
 			}
 
 			return nil
@@ -54,20 +45,10 @@ func (fileProc *FileProcessor) GetFileList(path string) error {
 
 func (fileProc *FileProcessor) GetTestCollectionArray() ([]TestCollection, error) {
 
-	//bar := progressbar.Default(int64(len(fileProc.arPathFiles)))
 	filesLength := len(fileProc.arPathFiles)
-	//for i := 0; i < 100; i++ {
-	//	bar.Add(1)
-	//	time.Sleep(40 * time.Millisecond)
-	//}
 
 	for i, path := range fileProc.arPathFiles {
-		//time.Sleep(1 * time.Millisecond)
-		log.Debugf("Processing [%d] files. Analyzing file [%d/%d] path: %s", filesLength, i+1, filesLength, path)
-		//bar.Add(1)
-		// create and fill test collection
-		//filename := path[strings.LastIndex(path, "/")+1:]
-		//testCollection := fileProc.getTestCollectionMeta2(filename, path)
+		log.Infof("Processing [%d] files. Analyzing file [%d/%d] path: %s", filesLength, i+1, filesLength, path)
 
 		file, err := os.Open(path)
 		if err != nil {
