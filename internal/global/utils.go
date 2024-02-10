@@ -25,6 +25,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -388,7 +389,7 @@ func ReturnDateFromString(stringDate string, stringFormat string) (error, time.T
 }
 
 // quickly return the number of lines in a file counting end of lines
-func lineCount(path string) (int, error) {
+func LineCount(path string) (int, error) {
 
 	file, err := os.Open(path)
 	if err != nil {
@@ -419,4 +420,34 @@ func lineCount(path string) (int, error) {
 
 	}
 	return count, nil
+}
+
+func ParsetimeLocal(t1 string, t2 string) (time.Time, error) {
+	var myTime time.Time
+	var err error
+	var toProcess string
+
+	if t1 != "" {
+		toProcess = t1
+	} else {
+		toProcess = t2
+	}
+	if toProcess == "" {
+		return myTime, fmt.Errorf("All values passed are empty")
+	}
+
+	re := regexp.MustCompile(`(\d{4}-\d{2}-\d{1,2}_\d{2}_\d{2})`)
+	match := re.FindStringSubmatch(toProcess)
+
+	if match[0] != "" {
+		//strDate := match[1]
+
+		myTime, err = time.Parse("2006-01-02_04_05", match[0])
+		if err != nil {
+			log.Warnf("Parsing error ", err)
+			//return err
+		}
+
+	}
+	return myTime, err
 }

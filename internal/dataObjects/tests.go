@@ -1,6 +1,9 @@
 package dataObjects
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 const (
 	READ  = 0
@@ -23,6 +26,7 @@ type TestCollection struct {
 	SelectPreWrites int
 	HostDB          string
 	RunNumber       int
+	Engine          string
 }
 
 type Test struct {
@@ -39,4 +43,25 @@ type Test struct {
 type run struct {
 	thread int
 	result map[string]float64
+}
+
+func getStringAction(code int) (string, error) {
+	switch code {
+	case 0:
+		return "READ", nil
+	case 1:
+		return "WRITE", nil
+
+	}
+	return "", fmt.Errorf("Invalid code passed %d", code)
+}
+func getCodeAction(action string) (int, error) {
+	switch action {
+	case "select":
+		return 0, nil
+	case "write":
+		return 1, nil
+
+	}
+	return 10, fmt.Errorf("Invalid action passed %s", action)
 }

@@ -2,14 +2,14 @@ package dataObjects
 
 import (
 	"bufio"
+	"fmt"
 	"github.com/schollz/progressbar/v3"
 	log "github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
-	"time"
+	global "sysbench-graph-creator/internal/global"
 )
 
 type FileProcessor struct {
@@ -28,8 +28,8 @@ func (fileProc *FileProcessor) GetFileList(path string) error {
 				return err
 			}
 			if !info.IsDir() &&
-				strings.Contains(info.Name(), ".csv") &&
-				!strings.Contains(path, "/data/") {
+				(strings.Contains(info.Name(), ".csv") || strings.Contains(path, ".txt")) &&
+				!strings.Contains(info.Name(), "_warmup_") {
 
 				fileProc.arPathFiles = append(fileProc.arPathFiles, path)
 
@@ -54,14 +54,17 @@ func (fileProc *FileProcessor) GetFileList(path string) error {
 
 func (fileProc *FileProcessor) GetTestCollectionArray() ([]TestCollection, error) {
 
-	bar := progressbar.Default(100)
-	for i := 0; i < 100; i++ {
-		bar.Add(1)
-		time.Sleep(40 * time.Millisecond)
-	}
+	//bar := progressbar.Default(int64(len(fileProc.arPathFiles)))
+	filesLength := len(fileProc.arPathFiles)
+	//for i := 0; i < 100; i++ {
+	//	bar.Add(1)
+	//	time.Sleep(40 * time.Millisecond)
+	//}
 
 	for i, path := range fileProc.arPathFiles {
-		log.Debugf("Processing file %d: %s", i+1, path)
+		//time.Sleep(1 * time.Millisecond)
+		log.Debugf("Processing [%d] files. Analyzing file [%d/%d] path: %s", filesLength, i+1, filesLength, path)
+		//bar.Add(1)
 		// create and fill test collection
 		//filename := path[strings.LastIndex(path, "/")+1:]
 		//testCollection := fileProc.getTestCollectionMeta2(filename, path)
@@ -75,19 +78,9 @@ func (fileProc *FileProcessor) GetTestCollectionArray() ([]TestCollection, error
 
 		//Open file and loop in to lines for meta
 		scanner := bufio.NewScanner(file)
-		testCollection, OK := fileProc.getTestCollectionMeta(*scanner)
+		testCollection, OK := fileProc.getTestCollectionData(*scanner, path)
 		if !OK {
 			log.Errorf("Parsing Test Collection failed %s", path)
-		}
-		for scanner.Scan() {
-			line := scanner.Text()
-			if len(line) > 1 {
-				if line[0:4] == "META" {
-					log.Debugf("META :%s", line)
-				}
-
-			}
-
 		}
 
 		fileProc.testCollectionAr = append(fileProc.testCollectionAr, testCollection)
@@ -97,66 +90,35 @@ func (fileProc *FileProcessor) GetTestCollectionArray() ([]TestCollection, error
 
 }
 
-func (fileProc *FileProcessor) getTestCollectionMeta(scanner bufio.Scanner) (TestCollection, bool) {
+func (fileProc *FileProcessor) getTestCollectionData(scanner bufio.Scanner, path string) (TestCollection, bool) {
 	testCollection := new(TestCollection)
-	var err error
+	//var err error
+
+	numberOfLines, err := global.LineCount(path)
+	if err != nil {
+		log.Error(err)
+	}
+	barLine := progressbar.Default(int64(numberOfLines))
+	metaTop := true
+	// first we retrive meta information about the tests
 	for scanner.Scan() {
 		line := scanner.Text()
+		barLine.Add(1)
+
 		if len(line) > 1 {
-
-			if strings.Contains(line, "META") {
-				line = strings.TrimSpace(line)
-				metaTag := strings.Split(line[5:], ";")
-				length := len(metaTag)
-
-				for i := 0; i < (length - 1); i++ {
-					values := strings.Split(metaTag[i], "=")
-
-					if strings.Contains(values[0], "execDate") {
-						re := regexp.MustCompile(`(\d{4}-\d{2}-\d{1,2}_\d{2}_\d{2})`)
-						match := re.FindStringSubmatch(values[1])
-						if match[0] != "" {
-							//strDate := match[1]
-							myTime, err := time.Parse("2006-01-02_04_05", match[0])
-							if err != nil {
-								log.Warnf("Parsing error ", err)
-								//return err
-							}
-							testCollection.DateStart = myTime
-						}
-					}
-
-					if strings.Contains(values[0], "testIdentifyer") {
-						testCollection.TestName = values[1]
-					}
-					if strings.Contains(values[0], "producer") {
-						testCollection.Producer = values[1]
-					}
-					if strings.Contains(values[0], "host") {
-						testCollection.HostDB = values[1]
-					}
-					if strings.Contains(values[0], "dimension") {
-						testCollection.Dimension = values[1]
-					}
-					if strings.Contains(values[0], "runNumber") {
-						testCollection.RunNumber, err = strconv.Atoi(values[1])
-						if err != nil {
-							log.Warnf("Error parsing run number ", err)
-						}
-
-					}
-
-					if strings.Contains(values[0], "actionType") {
-						if values[1] == "write" {
-							testCollection.ActionType = 1
-						} else {
-							testCollection.ActionType = 0
-						}
-
-					}
-
+			// load the mata for the collection (whole file run)
+			if strings.Contains(line, "META") && metaTop {
+				if !testCollection.getTestCollectionMeta(line, path) {
+					log.Error(fmt.Errorf("Cannot load Meta information for collection"))
 				}
-				return *testCollection, true
+				metaTop = true
+			}
+			//load meta and data for each specific test and add the tests
+			if strings.Contains(line, "META") && !metaTop {
+				if !testCollection.getTestMeta(line, path, scanner, barLine) {
+					log.Error(fmt.Errorf("Cannot load Meta information for test"))
+				}
+
 			}
 
 		}
@@ -164,46 +126,72 @@ func (fileProc *FileProcessor) getTestCollectionMeta(scanner bufio.Scanner) (Tes
 	return *testCollection, false
 }
 
-func (fileProc *FileProcessor) getTestCollectionMeta2(filename string, path string) TestCollection {
-	testCollection := new(TestCollection)
-	var limiter string
+func (tescImpl *TestCollection) getTestCollectionMeta(meta string, path string) bool {
 
-	if strings.Contains(filename, "_large_") {
-		limiter = "_large_"
-		testCollection.Dimension = "large"
-	} else {
-		limiter = "_small_"
-		testCollection.Dimension = "small"
-	}
-	if strings.Contains(filename, "_write_") {
-		testCollection.ActionType = WRITE
-	} else {
-		testCollection.ActionType = READ
-	}
-	if strings.Contains(path, "sysbench") {
-		testCollection.Producer = "sysbench"
-	}
-	if strings.Contains(path, "tpcc") {
-		testCollection.Producer = "tpcc"
-	}
-	if strings.Contains(path, "dbt3") {
-		testCollection.Producer = "dbt3"
-	}
+	meta = strings.TrimSpace(meta)
+	metaTag := strings.Split(meta[5:], ";")
+	length := len(metaTag)
+	var err error
 
-	re := regexp.MustCompile(`(\d{4}-\d{2}-\d{1,2}_\d{2}_\d{2})`)
-	match := re.FindStringSubmatch(filename)
+	/*
+		Parse the meta information for the top test collection
+		META: testIdentifyer=PS8042_iron_ssd2;dimension=large;actionType=select;runNumber=1;host=10.30.12.4;producer=sysbench;execDate=;engine=innodb
+	*/
+	for i := 0; i < length; i++ {
+		values := strings.Split(metaTag[i], "=")
+		log.Debugf("Meta argument parsing %s", values)
+		if len(values) > 0 {
+			trimmed := strings.Trim(values[0], " ")
+			switch trimmed {
+			case "testIdentifyer":
+				tescImpl.TestName = values[1]
+			case "dimension":
+				tescImpl.Dimension = values[1]
+			case "actionType":
+				tescImpl.ActionType, err = getCodeAction(values[1])
+			case "runNumber":
+				tescImpl.RunNumber, _ = strconv.Atoi(values[1])
+			case "host":
+				tescImpl.HostDB = values[1]
+			case "producer":
+				tescImpl.Producer = values[1]
+			case "execDate":
+				tescImpl.DateStart, err = global.ParsetimeLocal(values[1], path)
+			case "engine":
+				tescImpl.Engine = values[1]
 
-	if match[0] != "" {
-		//strDate := match[1]
-		myTime, err := time.Parse("2006-01-02_04_05", match[0])
-		if err != nil {
-			log.Warnf("Parsing error ", err)
-			//return err
+			}
+			if err != nil {
+				log.Error(err)
+				return false
+			}
 		}
 
-		testCollection.DateStart = myTime
 	}
-	//Global.ReturnDateFromString(match[1], "0000-12-23_00_00")
-	testCollection.TestName = filename[0:strings.Index(filename, limiter)]
-	return *testCollection
+	return true
+}
+
+/*
+here we start to read the data for each test and return only when we have collect all the information in the summary
+Here we also associate the single run thread run
+
+	so we have 2 objects
+	   testRunsCollection
+	        |- runs
+
+ie: for the test select inlist. We have the top object containing all the information related to the specific test:
+META: testIdentifyer=PS8042_iron_ssd2;dimension=large;actionType=select;runNumber=1;execCommand=run;subtest=select_run_inlist;execDate=2024-02-02_12_12_27;engine=innodb
+
+then it has an array of runs and each run is related to a number of threads bound to that run.
+Each run will report information as :
+TEST SUMMARY:
+TotalTime,RunningThreads,totalEvents,Events/s,Tot Operations,operations/s,tot reads,reads/s,Tot writes,writes/s,oterOps/s,latencyPct95(μs) ,Tot errors,errors/s,Tot reconnects,reconnects/s,Latency(ms) min, Latency(ms) max, Latency(ms) avg, Latency(ms) sum
+200,1,2642.00,13.21,2642.00,13.21,2642.00,13.21,0.00,0.00,0.00,137.35,0.00,0.00,0.00,0.00,0.04,0.22,0.08,200.00
+======================================
+RUNNING Test PS8042_iron_ssd2 sysbench select_run_inlist (filter: select) Thread=1 [END] 2024-02-02_12_15_47
+======================================
+*/
+func (tescImpl *TestCollection) getTestMeta(meta string, path string, scanner bufio.Scanner, barrLine *progressbar.ProgressBar) bool {
+
+	return true
 }
