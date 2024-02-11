@@ -19,8 +19,7 @@ type TestCollection struct {
 	Dimension       string    //Dimension is Large/Small
 	ExecutionTime   int64
 	TestName        string
-	Producer        string //MySQL/Percona Server/PXC /Maria
-	Version         string //Producer version
+	Producer        string //sysbench/tpcc/dbt3
 	Tests           map[string]Test
 	ActionType      int //
 	SelectPreWrites int
@@ -30,19 +29,23 @@ type TestCollection struct {
 }
 
 type Test struct {
-	Date          string
+	Name          string
+	DateStart     time.Time
+	DateEnd       time.Time
 	Dimension     string //Dimension is Large/Small
 	ExecutionTime int64
 	Labels        []string
-	TestType      string //sysbench/tpcc/dbt3
 	Threads       []int
-	runs          map[int]run
+	ThreadExec    map[int]Execution
 	ActionType    int //
+	Filter        string
+	RunNumber     int
 }
 
-type run struct {
-	thread int
-	result map[string]float64
+type Execution struct {
+	Thread  int
+	Command string
+	Result  map[string]float64
 }
 
 func getStringAction(code int) (string, error) {

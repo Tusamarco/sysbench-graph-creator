@@ -7,6 +7,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"os"
 	"path/filepath"
+	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	global "sysbench-graph-creator/internal/global"
@@ -69,6 +71,7 @@ func (fileProc *FileProcessor) GetTestCollectionArray() ([]TestCollection, error
  */
 func (fileProc *FileProcessor) getTestCollectionData(path string) (TestCollection, bool) {
 	testCollection := new(TestCollection)
+	testCollection.Tests = make(map[string]Test)
 	//var err error
 	//Open file and loop in to lines for meta
 	file, err := os.Open(path)
@@ -96,12 +99,15 @@ func (fileProc *FileProcessor) getTestCollectionData(path string) (TestCollectio
 				if !testCollection.getTestCollectionMeta(line, path) {
 					log.Error(fmt.Errorf("Cannot load Meta information for collection"))
 				}
-				metaTop = true
+				metaTop = false
 			}
 			//load meta and data for each specific test and add the tests
-			if strings.Contains(line, "META") && !metaTop {
-				if !testCollection.getTestMeta(line, path, *scanner, barLine) {
+			if strings.Contains(line, "SUBTEST:") && !metaTop {
+				newTest, OK := testCollection.getTestMeta(line, path, *scanner, barLine)
+				if !OK {
 					log.Error(fmt.Errorf("Cannot load Meta information for test"))
+				} else {
+					testCollection.Tests[newTest.Name] = newTest
 				}
 
 			}
@@ -176,7 +182,109 @@ TotalTime,RunningThreads,totalEvents,Events/s,Tot Operations,operations/s,tot re
 RUNNING Test PS8042_iron_ssd2 sysbench select_run_inlist (filter: select) Thread=1 [END] 2024-02-02_12_15_47
 ======================================
 */
-func (tescImpl *TestCollection) getTestMeta(meta string, path string, scanner bufio.Scanner, barrLine *progressbar.ProgressBar) bool {
+func (tescImpl *TestCollection) getTestMeta(line string, path string, scanner bufio.Scanner, barrLine *progressbar.ProgressBar) (Test, bool) {
+	var err error
+	var newTest Test
+	newTest.init()
 
-	return true
+	value := strings.Split(strings.ReplaceAll(line, " ", ""), ":")
+
+	newTest.Name = value[1]
+	scanner.Scan()
+	line = scanner.Text()
+	barrLine.Add(1)
+
+	if strings.Contains(line, "BLOCK: [START]") {
+		newTest.DateStart, err = global.ParsetimeLocal(line, "")
+		if err != nil {
+			log.Error(err)
+		}
+
+		re := regexp.MustCompile(`^.*(\(filter.*\))`)
+		match := re.FindStringSubmatch(line)
+		if len(match) > 0 {
+			if match[1] != "" {
+				value = strings.Split(strings.ReplaceAll(strings.ReplaceAll(match[1], "(", ""), ")", ""), ":")
+				if len(value) > 0 {
+					newTest.Filter = strings.TrimSpace(value[1])
+				}
+			}
+		}
+
+	}
+
+	scanner.Scan()
+	line = scanner.Text()
+	barrLine.Add(1)
+
+	if strings.Contains(line, "META:") {
+		line = strings.ReplaceAll(line, " ", "")
+		metaTag := strings.Split(line[5:], ";")
+		length := len(metaTag)
+		var err error
+
+		//META: testIdentifyer=PS8042_iron_ssd2;dimension=large;actionType=select;runNumber=1;execCommand=run;subtest=select_run_inlist;execDate=2024-02-02_12_12_27;engine=innodb
+		for i := 0; i < length; i++ {
+			values := strings.Split(metaTag[i], "=")
+			log.Debugf("Meta argument parsing %s", values)
+			if len(values) > 0 {
+				trimmed := strings.Trim(values[0], " ")
+				switch trimmed {
+				case "dimension":
+					newTest.Dimension = values[1]
+				case "actionType":
+					newTest.ActionType, err = getCodeAction(values[1])
+				case "runNumber":
+					newTest.RunNumber, err = strconv.Atoi(values[1])
+				}
+			}
+			if err != nil {
+				log.Error(err)
+				var errTest Test
+				return errTest, false
+			}
+		}
+
+	}
+
+	for scanner.Scan() {
+		line = scanner.Text()
+		barrLine.Add(1)
+		runExecuteInFull := false
+		//lastRunningThreadNumber := 0
+		if strings.Contains(line, "THREADS=") {
+			newRun, OK := newTest.getAllRuns(scanner, barrLine)
+			if !OK {
+				log.Error("Error while processing runs ")
+			}
+			if !reflect.ValueOf(newRun).IsZero() {
+				newTest.ThreadExec[newRun.Thread] = newRun
+				newTest.Threads = append(newTest.Threads, newRun.Thread)
+				//lastRunningThreadNumber = newRun.Thread
+			}
+		}
+
+		if strings.Contains(line, "SUBTEST:") {
+			// todo if we reach here then the test had some issue and we need to manage the return in some way
+			if !runExecuteInFull {
+
+			}
+
+		}
+	}
+
+	return newTest, true
+}
+
+func (testImpl *Test) init() {
+	testImpl.ThreadExec = make(map[int]Execution)
+	testImpl.Labels = []string{}
+	testImpl.Threads = []int{}
+
+}
+
+func (tescImpl *Test) getAllRuns(scanner bufio.Scanner, line *progressbar.ProgressBar) (Execution, bool) {
+	var newRun Execution
+
+	return newRun, true
 }
