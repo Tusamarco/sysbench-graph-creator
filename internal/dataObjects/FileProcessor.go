@@ -64,6 +64,8 @@ func (fileProc *FileProcessor) GetTestCollectionArray() ([]TestCollection, error
 		fileProc.testCollectionAr = append(fileProc.testCollectionAr, testCollection)
 	}
 
+	//TODO Need to discover the final time of the execution
+
 	return fileProc.testCollectionAr, nil
 
 }
