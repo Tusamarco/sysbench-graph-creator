@@ -26,6 +26,7 @@ type TestCollection struct {
 	HostDB          string
 	RunNumber       int
 	Engine          string
+	Name            string
 }
 
 type Test struct {
@@ -43,9 +44,12 @@ type Test struct {
 }
 
 type Execution struct {
-	Thread  int
-	Command string
-	Result  map[string]float64
+	Thread    int
+	Command   string
+	Result    map[string]float64
+	DateStart time.Time
+	DateEnd   time.Time
+	Processed bool `default:false`
 }
 
 func getStringAction(code int) (string, error) {

@@ -18,6 +18,7 @@ type FileProcessor struct {
 	arDataFile       []DataFile
 	arPathFiles      []string
 	testCollectionAr []TestCollection
+	MyScanner        *bufio.Scanner
 }
 
 // This function will recursively look for summary files and collect them into an array of strings
@@ -75,12 +76,14 @@ func (fileProc *FileProcessor) getTestCollectionData(path string) (TestCollectio
 	//var err error
 	//Open file and loop in to lines for meta
 	file, err := os.Open(path)
+	testCollection.Name = filepath.Base(file.Name())
+
 	if err != nil {
 		log.Error(err)
 	}
 
 	defer file.Close()
-	scanner := bufio.NewScanner(file)
+	fileProc.MyScanner = bufio.NewScanner(file)
 
 	numberOfLines, err := global.LineCount(path)
 	if err != nil {
@@ -89,8 +92,8 @@ func (fileProc *FileProcessor) getTestCollectionData(path string) (TestCollectio
 	barLine := progressbar.Default(int64(numberOfLines))
 	metaTop := true
 	// first we retrive meta information about the tests
-	for scanner.Scan() {
-		line := scanner.Text()
+	for fileProc.MyScanner.Scan() {
+		line := fileProc.MyScanner.Text()
 		barLine.Add(1)
 
 		if len(line) > 1 {
@@ -103,7 +106,7 @@ func (fileProc *FileProcessor) getTestCollectionData(path string) (TestCollectio
 			}
 			//load meta and data for each specific test and add the tests
 			if strings.Contains(line, "SUBTEST:") && !metaTop {
-				newTest, OK := testCollection.getTestMeta(line, path, *scanner, barLine)
+				newTest, OK := testCollection.getTestMeta(line, path, fileProc, barLine)
 				if !OK {
 					log.Error(fmt.Errorf("Cannot load Meta information for test"))
 				} else {
@@ -114,7 +117,7 @@ func (fileProc *FileProcessor) getTestCollectionData(path string) (TestCollectio
 
 		}
 	}
-	return *testCollection, false
+	return *testCollection, true
 }
 
 func (tescImpl *TestCollection) getTestCollectionMeta(meta string, path string) bool {
@@ -182,7 +185,7 @@ TotalTime,RunningThreads,totalEvents,Events/s,Tot Operations,operations/s,tot re
 RUNNING Test PS8042_iron_ssd2 sysbench select_run_inlist (filter: select) Thread=1 [END] 2024-02-02_12_15_47
 ======================================
 */
-func (tescImpl *TestCollection) getTestMeta(line string, path string, scanner bufio.Scanner, barrLine *progressbar.ProgressBar) (Test, bool) {
+func (tescImpl *TestCollection) getTestMeta(line string, path string, fileProc *FileProcessor, barrLine *progressbar.ProgressBar) (Test, bool) {
 	var err error
 	var newTest Test
 	newTest.init()
@@ -190,8 +193,8 @@ func (tescImpl *TestCollection) getTestMeta(line string, path string, scanner bu
 	value := strings.Split(strings.ReplaceAll(line, " ", ""), ":")
 
 	newTest.Name = value[1]
-	scanner.Scan()
-	line = scanner.Text()
+	fileProc.MyScanner.Scan()
+	line = fileProc.MyScanner.Text()
 	barrLine.Add(1)
 
 	if strings.Contains(line, "BLOCK: [START]") {
@@ -213,8 +216,8 @@ func (tescImpl *TestCollection) getTestMeta(line string, path string, scanner bu
 
 	}
 
-	scanner.Scan()
-	line = scanner.Text()
+	fileProc.MyScanner.Scan()
+	line = fileProc.MyScanner.Text()
 	barrLine.Add(1)
 
 	if strings.Contains(line, "META:") {
@@ -247,13 +250,16 @@ func (tescImpl *TestCollection) getTestMeta(line string, path string, scanner bu
 
 	}
 
-	for scanner.Scan() {
-		line = scanner.Text()
+	for fileProc.MyScanner.Scan() {
+		line = fileProc.MyScanner.Text()
 		barrLine.Add(1)
 		runExecuteInFull := false
 		//lastRunningThreadNumber := 0
 		if strings.Contains(line, "THREADS=") {
-			newRun, OK := newTest.getAllRuns(scanner, barrLine)
+			//iThtread, _ := strconv.Atoi(line[8:])
+			newRun, OK := newTest.getAllRuns(fileProc, barrLine)
+			line = fileProc.MyScanner.Text()
+
 			if !OK {
 				log.Error("Error while processing runs ")
 			}
@@ -263,7 +269,13 @@ func (tescImpl *TestCollection) getTestMeta(line string, path string, scanner bu
 				//lastRunningThreadNumber = newRun.Thread
 			}
 		}
-
+		if strings.Contains(line, "BLOCK: [END]") {
+			newTest.DateEnd, err = global.ParsetimeLocal(line, "")
+			if err != nil {
+				log.Error(err)
+			}
+			return newTest, true
+		}
 		if strings.Contains(line, "SUBTEST:") {
 			// todo if we reach here then the test had some issue and we need to manage the return in some way
 			if !runExecuteInFull {
@@ -283,8 +295,78 @@ func (testImpl *Test) init() {
 
 }
 
-func (tescImpl *Test) getAllRuns(scanner bufio.Scanner, line *progressbar.ProgressBar) (Execution, bool) {
+func (tescImpl *Test) getAllRuns(fileProc *FileProcessor, lineBar *progressbar.ProgressBar) (Execution, bool) {
 	var newRun Execution
+	var errExecution Execution
+	newRun.Result = make(map[string]float64)
+	var err error
+
+	line := fileProc.MyScanner.Text()
+	if strings.Contains(line, "THREADS=") {
+		iThtread, _ := strconv.Atoi(line[8:])
+		newRun.Thread = iThtread
+	}
+
+	for fileProc.MyScanner.Scan() {
+		lineBar.Add(1)
+		line := fileProc.MyScanner.Text()
+		log.Debugf(line)
+
+		if strings.Contains(line, "RUNNING ") && strings.Contains(line, "[START]") {
+			newRun.DateStart, err = global.ParsetimeLocal(line, "")
+			if err != nil {
+				log.Error(err)
+				return errExecution, false
+			}
+		}
+		if strings.Contains(line, "RUNNING ") && strings.Contains(line, "[END]") {
+			newRun.DateEnd, err = global.ParsetimeLocal(line, "")
+			if err != nil {
+				log.Error(err)
+				return errExecution, false
+			}
+
+			return newRun, true
+		}
+
+		/*
+			We should never reach this condition, if we do something during the tests failed and we may have a corrupted log file
+		*/
+		if strings.Contains(line, "THREADS=") || strings.Contains(line, "SUBTEST:") {
+			log.Error("It seems a test failed while executing. Results for this run are not correct")
+			log.Errorf("Test Name: %s, Threads %d ", tescImpl.Name, newRun.Thread)
+
+			return newRun, false
+		}
+
+		if strings.Contains(line, "Executing:") {
+			newRun.Command = line[11:]
+		}
+
+		if strings.Contains(line, "TEST SUMMARY:") {
+			fileProc.MyScanner.Scan()
+			line = fileProc.MyScanner.Text()
+			tescImpl.Labels = strings.Split(line, ",")
+			fileProc.MyScanner.Scan()
+			line = fileProc.MyScanner.Text()
+			arResults := strings.Split(line, ",")
+			ilen := len(arResults)
+			if ilen == len(tescImpl.Labels) {
+				for i := 0; i < ilen; i++ {
+					newRun.Result[tescImpl.Labels[i]], err = strconv.ParseFloat(arResults[i], 64)
+					if err != nil {
+						log.Error(err)
+						return errExecution, false
+					}
+				}
+				newRun.Processed = true
+			} else {
+				log.Errorf("Error in assign results. Lenght of Labels and data doesn't match. Labels %d; Results %d. ", len(tescImpl.Labels), ilen)
+				return errExecution, false
+			}
+		}
+
+	}
 
 	return newRun, true
 }
