@@ -78,7 +78,11 @@ func (fileProc *FileProcessor) getTestCollectionData(path string) (TestCollectio
 	//var err error
 	//Open file and loop in to lines for meta
 	file, err := os.Open(path)
-	testCollection.Name = filepath.Base(file.Name())
+
+	nameFiltered := global.ReplaceString(filepath.Base(file.Name()), "_runNumber[0-9]_", "_")
+	nameFiltered = global.ReplaceString(nameFiltered, "_\\d{4}-\\d{2}-\\d{1,2}_\\d{2}_\\d{2}", "")
+
+	testCollection.Name = nameFiltered
 
 	if err != nil {
 		log.Error(err)

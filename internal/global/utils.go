@@ -451,3 +451,11 @@ func ParsetimeLocal(t1 string, t2 string) (time.Time, error) {
 	}
 	return myTime, err
 }
+
+func ReplaceString(input string, pattern string, replacewith string) string {
+	var output string
+	re := regexp.MustCompile(pattern)
+	output = re.ReplaceAllString(input, replacewith)
+
+	return output
+}
