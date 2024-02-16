@@ -2,6 +2,7 @@ package dataObjects
 
 import (
 	"fmt"
+	"github.com/schollz/progressbar/v3"
 	"time"
 )
 
@@ -27,6 +28,9 @@ type TestCollection struct {
 	RunNumber       int
 	Engine          string
 	Name            string
+	MySQLVersion    string
+	MySQLProducer   string
+	PBarr           *progressbar.ProgressBar
 }
 
 type Test struct {

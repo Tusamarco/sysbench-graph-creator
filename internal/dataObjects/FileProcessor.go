@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	global "sysbench-graph-creator/internal/global"
+	"time"
 )
 
 type FileProcessor struct {
@@ -95,12 +96,14 @@ func (fileProc *FileProcessor) getTestCollectionData(path string) (TestCollectio
 	if err != nil {
 		log.Error(err)
 	}
-	barLine := progressbar.Default(int64(numberOfLines))
+	testCollection.PBarr = progressbar.Default(int64(numberOfLines))
+	defer testCollection.PBarr.Set(numberOfLines)
+
 	metaTop := true
 	// first we retrive meta information about the tests
 	for fileProc.MyScanner.Scan() {
 		line := fileProc.MyScanner.Text()
-		barLine.Add(1)
+		testCollection.PBarr.Add(1)
 
 		if len(line) > 1 {
 			// load the mata for the collection (whole file run)
@@ -112,7 +115,7 @@ func (fileProc *FileProcessor) getTestCollectionData(path string) (TestCollectio
 			}
 			//load meta and data for each specific test and add the tests
 			if strings.Contains(line, "SUBTEST:") && !metaTop {
-				newTest, OK := testCollection.getTestMeta(line, path, fileProc, barLine)
+				newTest, OK := testCollection.getTestMeta(line, path, fileProc)
 				if !OK {
 					log.Error(fmt.Errorf("Cannot load Meta information for test"))
 				} else {
@@ -159,6 +162,10 @@ func (tescImpl *TestCollection) getTestCollectionMeta(meta string, path string) 
 				tescImpl.DateStart, err = global.ParsetimeLocal(values[1], path)
 			case "engine":
 				tescImpl.Engine = values[1]
+			case "mysqlproducer":
+				tescImpl.MySQLProducer = values[1]
+			case "mysqlversion":
+				tescImpl.MySQLVersion = values[1]
 
 			}
 			if err != nil {
@@ -191,7 +198,7 @@ TotalTime,RunningThreads,totalEvents,Events/s,Tot Operations,operations/s,tot re
 RUNNING Test PS8042_iron_ssd2 sysbench select_run_inlist (filter: select) Thread=1 [END] 2024-02-02_12_15_47
 ======================================
 */
-func (tescImpl *TestCollection) getTestMeta(line string, path string, fileProc *FileProcessor, barrLine *progressbar.ProgressBar) (Test, bool) {
+func (tescImpl *TestCollection) getTestMeta(line string, path string, fileProc *FileProcessor) (Test, bool) {
 	var err error
 	var newTest Test
 	newTest.init()
@@ -201,7 +208,7 @@ func (tescImpl *TestCollection) getTestMeta(line string, path string, fileProc *
 	newTest.Name = value[1]
 	fileProc.MyScanner.Scan()
 	line = fileProc.MyScanner.Text()
-	barrLine.Add(1)
+	tescImpl.PBarr.Add(1)
 
 	if strings.Contains(line, "BLOCK: [START]") {
 		newTest.DateStart, err = global.ParsetimeLocal(line, "")
@@ -224,7 +231,7 @@ func (tescImpl *TestCollection) getTestMeta(line string, path string, fileProc *
 
 	fileProc.MyScanner.Scan()
 	line = fileProc.MyScanner.Text()
-	barrLine.Add(1)
+	tescImpl.PBarr.Add(1)
 
 	if strings.Contains(line, "META:") {
 		line = strings.ReplaceAll(line, " ", "")
@@ -258,12 +265,12 @@ func (tescImpl *TestCollection) getTestMeta(line string, path string, fileProc *
 
 	for fileProc.MyScanner.Scan() {
 		line = fileProc.MyScanner.Text()
-		barrLine.Add(1)
+		tescImpl.PBarr.Add(1)
 		runExecuteInFull := false
 		//lastRunningThreadNumber := 0
 		if strings.Contains(line, "THREADS=") {
 			//iThtread, _ := strconv.Atoi(line[8:])
-			newRun, OK := newTest.getAllRuns(fileProc, barrLine)
+			newRun, OK := newTest.getAllRuns(fileProc, *tescImpl)
 			line = fileProc.MyScanner.Text()
 
 			if !OK {
@@ -294,14 +301,14 @@ func (tescImpl *TestCollection) getTestMeta(line string, path string, fileProc *
 	return newTest, true
 }
 
-func (testImpl *Test) init() {
-	testImpl.ThreadExec = make(map[int]Execution)
-	testImpl.Labels = []string{}
-	testImpl.Threads = []int{}
+func (test *Test) init() {
+	test.ThreadExec = make(map[int]Execution)
+	test.Labels = []string{}
+	test.Threads = []int{}
 
 }
 
-func (tescImpl *Test) getAllRuns(fileProc *FileProcessor, lineBar *progressbar.ProgressBar) (Execution, bool) {
+func (test *Test) getAllRuns(fileProc *FileProcessor, tescImpl TestCollection) (Execution, bool) {
 	var newRun Execution
 	var errExecution Execution
 	newRun.Result = make(map[string]float64)
@@ -314,9 +321,11 @@ func (tescImpl *Test) getAllRuns(fileProc *FileProcessor, lineBar *progressbar.P
 	}
 
 	for fileProc.MyScanner.Scan() {
-		lineBar.Add(1)
+		tescImpl.PBarr.Add(1)
+		time.Sleep(1 * time.Microsecond / 10)
+
 		line := fileProc.MyScanner.Text()
-		log.Debugf(line)
+		//log.Debugf(line)
 
 		if strings.Contains(line, "RUNNING ") && strings.Contains(line, "[START]") {
 			newRun.DateStart, err = global.ParsetimeLocal(line, "")
@@ -352,14 +361,14 @@ func (tescImpl *Test) getAllRuns(fileProc *FileProcessor, lineBar *progressbar.P
 		if strings.Contains(line, "TEST SUMMARY:") {
 			fileProc.MyScanner.Scan()
 			line = fileProc.MyScanner.Text()
-			tescImpl.Labels = strings.Split(line, ",")
+			test.Labels = strings.Split(line, ",")
 			fileProc.MyScanner.Scan()
 			line = fileProc.MyScanner.Text()
 			arResults := strings.Split(line, ",")
 			ilen := len(arResults)
-			if ilen == len(tescImpl.Labels) {
+			if ilen == len(test.Labels) {
 				for i := 0; i < ilen; i++ {
-					newRun.Result[tescImpl.Labels[i]], err = strconv.ParseFloat(arResults[i], 64)
+					newRun.Result[test.Labels[i]], err = strconv.ParseFloat(arResults[i], 64)
 					if err != nil {
 						log.Error(err)
 						return errExecution, false
@@ -367,7 +376,7 @@ func (tescImpl *Test) getAllRuns(fileProc *FileProcessor, lineBar *progressbar.P
 				}
 				newRun.Processed = true
 			} else {
-				log.Errorf("Error in assign results. Lenght of Labels and data doesn't match. Labels %d; Results %d. ", len(tescImpl.Labels), ilen)
+				log.Errorf("Error in assign results. Lenght of Labels and data doesn't match. Labels %d; Results %d. ", len(test.Labels), ilen)
 				return errExecution, false
 			}
 		}
