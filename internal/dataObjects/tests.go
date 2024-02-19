@@ -14,6 +14,37 @@ const (
 	POSTWRITE = 1
 )
 
+type TestKey struct {
+	Producer        string
+	SelectPreWrites int
+	TestName        string
+	Dimension       string //Dimension is Large/Small
+}
+type ResultValueKey struct {
+	Name   string
+	Thread int
+}
+
+type ResultValue struct {
+	ValueKey ResultValueKey
+	Runs     map[int]float64
+	STD      float64
+	Lerror   float64
+}
+
+type ResultTest struct {
+	Key             TestKey
+	Producer        string
+	ActionType      int //
+	SelectPreWrites int
+	TestName        string
+	Dimension       string //Dimension is Large/Small
+	Tests           map[TestKey]Test
+	Results         ResultValue
+	STD             float64
+	Gerror          float64
+}
+
 type TestCollection struct {
 	DateStart       time.Time //Date is coming from when was run the test
 	DateEnd         time.Time //Date is coming from when was run the test
