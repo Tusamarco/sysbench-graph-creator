@@ -65,9 +65,71 @@ func (fileProc *FileProcessor) GetTestCollectionArray() ([]TestCollection, error
 		fileProc.testCollectionAr = append(fileProc.testCollectionAr, testCollection)
 	}
 
-	//TODO Need to discover the final time of the execution
+	//we identify the last test executed and its end time
+	fileProc.identifyEndTime()
+	// we identify and set the post writes collections
+	fileProc.identifyPerPostWrite()
 
 	return fileProc.testCollectionAr, nil
+
+}
+
+func (fileProc *FileProcessor) identifyEndTime() {
+	for i := 0; i < len(fileProc.testCollectionAr); i++ {
+
+		mylen := len(fileProc.testCollectionAr[i].Tests)
+		if mylen > 0 {
+			mylen--
+			//icounter := 0
+			var maxDate time.Time
+			for _, item := range fileProc.testCollectionAr[i].Tests {
+
+				if !maxDate.After(item.DateEnd) {
+					maxDate = item.DateEnd
+				}
+			}
+			//log.Debugf("Processing %s %s", myrange, item.Name)
+			fileProc.testCollectionAr[i].DateEnd = maxDate
+			difference := fileProc.testCollectionAr[i].DateEnd.Sub(fileProc.testCollectionAr[i].DateStart)
+			fileProc.testCollectionAr[i].ExecutionTime = int64(difference.Minutes())
+
+		}
+
+		//if mylen > 0 {
+		//	myTest := fileProc.testCollectionAr[i].Tests[mylen-1]
+		//}
+	}
+}
+
+/*
+Browse all the collections and identify who is the post write one comparing them by:
+- name
+- run
+- date
+- action type
+- dimension
+*/
+func (fileProc *FileProcessor) identifyPerPostWrite() {
+
+	for i := 0; i < len(fileProc.testCollectionAr); i++ {
+
+		myTestCollection := fileProc.testCollectionAr[i]
+		for y := 0; y < len(fileProc.testCollectionAr); y++ {
+			if myTestCollection.Name == fileProc.testCollectionAr[y].Name &&
+				myTestCollection.Dimension == fileProc.testCollectionAr[y].Dimension &&
+				myTestCollection.ActionType == fileProc.testCollectionAr[y].ActionType &&
+				myTestCollection.RunNumber == fileProc.testCollectionAr[y].RunNumber {
+
+				if myTestCollection.DateStart.After(fileProc.testCollectionAr[y].DateStart) {
+					myTestCollection.SelectPreWrites = POSTWRITE
+					fileProc.testCollectionAr[i] = myTestCollection
+					log.Debugf("Assign Post write to true to collection %s dimension %s run %d ", myTestCollection.Name, myTestCollection.Dimension, myTestCollection.RunNumber)
+					break
+				}
+			}
+
+		}
+	}
 
 }
 

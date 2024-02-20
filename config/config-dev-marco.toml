@@ -10,7 +10,7 @@ destinationPath=""
 
 [global]
 testName=""
-logLevel = "info"
+logLevel = "debug"
 logTarget = "stdout" #stdout | file
 logFile = "/Users/marcotusa/tmp/sysbench_graph_creator.log"
 performance = true

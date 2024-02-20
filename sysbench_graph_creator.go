@@ -83,9 +83,7 @@ func main() {
 	fileProc := new(DO.FileProcessor)
 	err1 := fileProc.GetFileList(config.Parser.SourceDataPath)
 	testCollection, err1 := fileProc.GetTestCollectionArray()
-
 	log.Debugf("Test collection %d", len(testCollection))
-
 	if err1 != nil {
 		log.Error(err1)
 		exitWithCode(1)
