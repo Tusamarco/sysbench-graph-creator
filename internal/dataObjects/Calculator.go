@@ -14,7 +14,7 @@ type Calculator struct {
 func (calcIMpl *Calculator) BuildResults(testCollections []TestCollection) []ResultTest {
 	emptyArray := []ResultTest{}
 	calcIMpl.LocalCollection = calcIMpl.getCollectionMap(testCollections)
-	log.Debugf("Imported %d collections", len(calcIMpl.LocalCollection))
+	log.Debugf("Imported %d collections of %d", len(calcIMpl.LocalCollection), len(testCollections))
 	calcIMpl.loopCollections()
 
 	return emptyArray
@@ -27,6 +27,8 @@ func (calcIMpl *Calculator) getCollectionMap(collections []TestCollection) map[i
 		for x := 0; x < len(collections); x++ {
 			if collections[x].TestName != "" {
 				collectionMap[x] = collections[x]
+			} else {
+				log.Debugf("Whay is this collection empty?")
 			}
 		}
 	}

@@ -146,6 +146,7 @@ func (fileProc *FileProcessor) getTestCollectionData(path string) (TestCollectio
 	nameFiltered = global.ReplaceString(nameFiltered, "_\\d{4}-\\d{2}-\\d{1,2}_\\d{2}_\\d{2}", "")
 
 	testCollection.Name = nameFiltered
+	testCollection.FileName = filepath.Base(file.Name())
 
 	if err != nil {
 		log.Error(err)

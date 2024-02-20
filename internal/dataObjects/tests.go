@@ -62,6 +62,7 @@ type TestCollection struct {
 	MySQLVersion    string
 	MySQLProducer   string
 	PBarr           *progressbar.ProgressBar
+	FileName        string
 }
 
 type Test struct {
