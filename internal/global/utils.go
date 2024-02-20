@@ -442,7 +442,7 @@ func ParsetimeLocal(t1 string, t2 string) (time.Time, error) {
 	if match[0] != "" {
 		//strDate := match[1]
 
-		myTime, err = time.Parse("2006-01-02_04_05", match[0])
+		myTime, err = time.Parse("2006-01-02_15_04", match[0])
 		if err != nil {
 			log.Warnf("Parsing error ", err)
 			//return err

@@ -85,10 +85,9 @@ func main() {
 	testCollection, err1 := fileProc.GetTestCollectionArray()
 	calculator := new(DO.Calculator)
 	testsResults := calculator.BuildResults(testCollection)
+
 	log.Debugf("Test Results %d", len(testsResults))
-
 	log.Debugf("Test collection %d", len(testCollection))
-
 	if err1 != nil {
 		log.Error(err1)
 		exitWithCode(1)
