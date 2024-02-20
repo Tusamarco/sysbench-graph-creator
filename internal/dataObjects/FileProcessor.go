@@ -407,7 +407,7 @@ func (test *Test) getAllRuns(fileProc *FileProcessor, tescImpl TestCollection) (
 		}
 
 		/*
-			We should never reach this condition, if we do something during the tests failed and we may have a corrupted log file
+			TODO We should never reach this condition, if we do something during the tests failed and we may have a corrupted log file
 		*/
 		if strings.Contains(line, "THREADS=") || strings.Contains(line, "SUBTEST:") {
 			log.Error("It seems a test failed while executing. Results for this run are not correct")
