@@ -83,6 +83,9 @@ func main() {
 	fileProc := new(DO.FileProcessor)
 	err1 := fileProc.GetFileList(config.Parser.SourceDataPath)
 	testCollection, err1 := fileProc.GetTestCollectionArray()
+	calculator := new(DO.Calculator)
+	testsResults := calculator.BuildResults(testCollection)
+	log.Debugf("Test Results %d", len(testsResults))
 
 	log.Debugf("Test collection %d", len(testCollection))
 
@@ -90,7 +93,7 @@ func main() {
 		log.Error(err1)
 		exitWithCode(1)
 	}
-
+	exitWithCode(0)
 	//log.Debug(len(myArFiles))
 }
 func portingCommandOption(config global.Configuration) {
