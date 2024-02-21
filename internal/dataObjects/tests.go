@@ -15,10 +15,13 @@ const (
 )
 
 type TestKey struct {
-	Producer        string
-	SelectPreWrites int
-	TestName        string
-	Dimension       string //Dimension is Large/Small
+	ActionType         int
+	TestCollectionName string
+	MySQLProducer      string
+	MySQLVersion       string
+	SelectPreWrites    int
+	TestName           string
+	Dimension          string //Dimension is Large/Small
 }
 type ResultValueKey struct {
 	Name   string
@@ -26,43 +29,37 @@ type ResultValueKey struct {
 }
 
 type ResultValue struct {
-	ValueKey ResultValueKey
-	Runs     map[int]float64
-	STD      float64
-	Lerror   float64
+	threadNumber int
+	value        float64
+	STD          float64
+	Lerror       float64
 }
 
 type ResultTest struct {
-	Key             TestKey
-	Producer        string
-	ActionType      int //
-	SelectPreWrites int
-	TestName        string
-	Dimension       string //Dimension is Large/Small
-	Tests           map[TestKey]Test
-	Results         ResultValue
-	STD             float64
-	Gerror          float64
+	Key    TestKey
+	Labels map[string][]ResultValue
+	STD    float64
+	Gerror float64
 }
 
 type TestCollection struct {
-	DateStart       time.Time //Date is coming from when was run the test
-	DateEnd         time.Time //Date is coming from when was run the test
-	Dimension       string    //Dimension is Large/Small
-	ExecutionTime   int64
-	TestName        string
-	Producer        string //sysbench/tpcc/dbt3
-	Tests           map[string]Test
-	ActionType      int //
-	SelectPreWrites int
-	HostDB          string
-	RunNumber       int
-	Engine          string
-	Name            string
-	MySQLVersion    string
-	MySQLProducer   string
-	PBarr           *progressbar.ProgressBar
-	FileName        string
+	DateStart        time.Time //Date is coming from when was run the test
+	DateEnd          time.Time //Date is coming from when was run the test
+	Dimension        string    //Dimension is Large/Small
+	ExecutionTime    int64
+	TestName         string
+	Producer         string //sysbench/tpcc/dbt3
+	Tests            map[string]Test
+	ActionType       int //
+	SelectPostWrites int
+	HostDB           string
+	RunNumber        int
+	Engine           string
+	Name             string
+	MySQLVersion     string
+	MySQLProducer    string
+	PBarr            *progressbar.ProgressBar
+	FileName         string
 }
 
 type Test struct {

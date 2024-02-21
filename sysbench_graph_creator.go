@@ -84,6 +84,7 @@ func main() {
 	err1 := fileProc.GetFileList(config.Parser.SourceDataPath)
 	testCollection, err1 := fileProc.GetTestCollectionArray()
 	calculator := new(DO.Calculator)
+	calculator.Init()
 	testsResults := calculator.BuildResults(testCollection)
 
 	log.Debugf("Test Results %d", len(testsResults))

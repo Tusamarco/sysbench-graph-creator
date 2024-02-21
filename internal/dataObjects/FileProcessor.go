@@ -121,7 +121,7 @@ func (fileProc *FileProcessor) identifyPerPostWrite() {
 				myTestCollection.RunNumber == fileProc.testCollectionAr[y].RunNumber {
 
 				if myTestCollection.DateStart.After(fileProc.testCollectionAr[y].DateStart) {
-					myTestCollection.SelectPreWrites = POSTWRITE
+					myTestCollection.SelectPostWrites = POSTWRITE
 					fileProc.testCollectionAr[i] = myTestCollection
 					log.Debugf("Assign Post write to true to collection %s dimension %s run %d ", myTestCollection.Name, myTestCollection.Dimension, myTestCollection.RunNumber)
 					break
