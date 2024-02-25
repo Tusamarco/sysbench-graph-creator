@@ -1,8 +1,11 @@
 package dataObjects
 
 import (
+	"github.com/montanaflynn/stats"
 	log "github.com/sirupsen/logrus"
+	"math"
 	"sort"
+	global "sysbench-graph-creator/internal/global"
 )
 
 //gonum.org/v1/gonum/stat
@@ -19,13 +22,13 @@ func (calcIMpl *Calculator) Init() {
 	calcIMpl.TestResults = make(map[TestKey]ResultTest)
 }
 
-func (calcIMpl *Calculator) BuildResults(testCollections []TestCollection) []ResultTest {
-	emptyArray := []ResultTest{}
+func (calcIMpl *Calculator) BuildResults(testCollections []TestCollection) map[TestKey]ResultTest {
+	//emptyArray := []ResultTest{}
 	calcIMpl.LocalCollection = calcIMpl.getCollectionMap(testCollections)
 	log.Debugf("Imported %d collections of %d", len(calcIMpl.LocalCollection), len(testCollections))
 	calcIMpl.loopCollections()
 
-	return emptyArray
+	return calcIMpl.TestResults
 }
 
 func (calcIMpl *Calculator) getCollectionMap(collections []TestCollection) map[int]TestCollection {
@@ -36,7 +39,7 @@ func (calcIMpl *Calculator) getCollectionMap(collections []TestCollection) map[i
 			if collections[x].TestName != "" {
 				collectionMap[x] = collections[x]
 			} else {
-				log.Debugf("Whay is this collection empty?")
+				log.Debugf("Why is this collection empty?")
 			}
 		}
 	}
@@ -118,11 +121,8 @@ func (calcIMpl *Calculator) loopTests(colectionMap map[int]TestCollection) bool 
 			for _, col := range colectionMap {
 				testAr = append(testAr, col.Tests[id])
 			}
-			if len(testAr) < 1 {
-				log.Warnf("Yeah that is weird no test has been found %s", id)
-				return false
-			}
-			OK = calcIMpl.calculateTestResultForSingleTest(testAr, leadCollection)
+
+			OK = calcIMpl.calculateTestResultTest(testAr, leadCollection)
 
 		}
 		return OK
@@ -132,7 +132,8 @@ func (calcIMpl *Calculator) loopTests(colectionMap map[int]TestCollection) bool 
 
 }
 
-func (calcIMpl *Calculator) calculateTestResultForSingleTest(tests []Test, leadCollection TestCollection) bool {
+// for each test we build an object and if multiple run we calculate the median, std and gerror
+func (calcIMpl *Calculator) calculateTestResultTest(tests []Test, leadCollection TestCollection) bool {
 	var newTestResult ResultTest
 	var newTestResultKey TestKey
 
@@ -145,31 +146,75 @@ func (calcIMpl *Calculator) calculateTestResultForSingleTest(tests []Test, leadC
 	newTestResultKey.SelectPreWrites = leadCollection.SelectPostWrites
 	newTestResult.Key = newTestResultKey
 
-	if len(tests) > 10 {
-
+	if len(tests) > 1 {
+		newTestResult.Executions = len(tests)
+		_, newTestResult.Labels = calcIMpl.transformLablesForMultipleExecutions(tests)
+		newTestResult.STD, newTestResult.Gerror = calcIMpl.getLabelSTDGerror(newTestResult.Labels)
 	} else {
 		newTestResult.STD = 0
 		newTestResult.Gerror = 0
-		_, newTestResult.Labels = calcIMpl.transformLablesForSingleTest(tests[0])
+		newTestResult.Executions = 1
+		_, newTestResult.Labels = calcIMpl.transformLablesForSingleExecution(tests[0])
 	}
 
 	calcIMpl.TestResults[newTestResultKey] = newTestResult
 
-	//i := 0
-	//
-	////we use the first entry as the leading test, but we need to check if there are more than 1 otherwise it will got an error
-	//if len(tests) > 1 {
-	//	i = 1
-	//}
-	//
-	//for i = i; i < len(tests); i++ {
-	//
-	//}
-
 	return true
 }
 
-func (calcIMpl *Calculator) transformLablesForSingleTest(test Test) (bool, map[string][]ResultValue) {
+// Before processing we transform the dataset from rows into column to be able to calculate the median, std and gerror [Multi run case]
+func (calcIMpl *Calculator) transformLablesForMultipleExecutions(test []Test) (bool, map[string][]ResultValue) {
+	labels := make(map[string][]ResultValue)
+	for _, label := range test[0].Labels {
+		resultValueAr := []ResultValue{}
+		log.Debugf("processing label %s", label)
+
+		//we need to loop all the threads and get the values for the label
+		tempValuesAr := []float64{}
+
+		for _, thread := range test[0].ThreadExec {
+			threadI := thread.Thread
+			for _, th := range test {
+				for thLabel, thResult := range th.ThreadExec[threadI].Result {
+					if thLabel == label {
+						log.Debugf("Processing main: %s current: %s  Execution: %d Thread: %d result %.4f", label, thLabel, th.RunNumber, threadI, thResult)
+						tempValuesAr = append(tempValuesAr, thResult)
+					}
+
+				}
+			}
+
+			//calculate final value, std and gerror
+			resultValueAr = append(resultValueAr, evaluateMultipleExecutionsValues(tempValuesAr, label, threadI))
+			tempValuesAr = []float64{}
+			log.Debugf("")
+		}
+
+		sort.SliceStable(resultValueAr, func(i, j int) bool {
+			return resultValueAr[i].ThreadNumber < resultValueAr[j].ThreadNumber
+		})
+
+		labels[label] = resultValueAr
+
+	}
+	return true, labels
+}
+
+// here we do the sdt calculation and gerror
+func evaluateMultipleExecutionsValues(arValues []float64, label string, threadId int) ResultValue {
+
+	medianValue, _ := stats.Median(arValues)
+	medianValue, _ = stats.Round(medianValue, 2)
+	stdValue, _ := stats.StandardDeviationSample(arValues)
+	stdValue, _ = stats.Round(stdValue, 2)
+	errorV := stdValue / medianValue * 100
+	log.Debugf("Thread %d Label %s Median %.4f Std %.4f  Distance(error) %.4f", threadId, label, medianValue, stdValue, errorV)
+
+	return ResultValue{threadId, label, medianValue, stdValue, errorV}
+}
+
+// Before processing we transform the dataset from rows into column to be able to calculate the median, std and gerror [Single run case]
+func (calcIMpl *Calculator) transformLablesForSingleExecution(test Test) (bool, map[string][]ResultValue) {
 	labels := make(map[string][]ResultValue)
 
 	for _, label := range test.Labels {
@@ -180,18 +225,108 @@ func (calcIMpl *Calculator) transformLablesForSingleTest(test Test) (bool, map[s
 
 			for thLabel, thResult := range th.Result {
 				if thLabel == label {
-					resultValueAr = append(resultValueAr, ResultValue{thID, thResult, 0, 0})
+					resultValueAr = append(resultValueAr, ResultValue{thID, label, thResult, 0, 0})
 				}
 
 			}
 
 		}
 		sort.SliceStable(resultValueAr, func(i, j int) bool {
-			return resultValueAr[i].threadNumber < resultValueAr[j].threadNumber
+			return resultValueAr[i].ThreadNumber < resultValueAr[j].ThreadNumber
 		})
 		labels[label] = resultValueAr
 
 	}
 
-	return false, labels
+	return true, labels
+}
+
+func (calcIMpl *Calculator) GroupByProducers() []Producer {
+	producersAr := []Producer{}
+	for key, _ := range calcIMpl.TestResults {
+		present := false
+		for _, producer := range producersAr {
+			if producer.MySQLProducer == key.MySQLProducer && producer.MySQLVersion == key.MySQLVersion {
+				present = true
+			}
+		}
+		if !present {
+			newProducer := Producer{key.MySQLProducer, key.MySQLVersion, make(map[TestKey]ResultTest), []TestType{}, 0.0, 0.0}
+			log.Debugf("Adding producer %v", newProducer)
+			producersAr = append(producersAr, newProducer)
+		}
+
+	}
+	producersAr = calcIMpl.assignTestsResultsToProducers(producersAr)
+	producersAr = calcIMpl.calculateProducerSTDGerror(producersAr)
+	return producersAr
+
+}
+func (calcIMpl *Calculator) assignTestsResultsToProducers(producersAr []Producer) []Producer {
+
+	for idx, producer := range producersAr {
+
+		for key, value := range calcIMpl.TestResults {
+			if producer.MySQLProducer == key.MySQLProducer && producer.MySQLVersion == key.MySQLVersion {
+				producer.TestsResults[key] = value
+				present := false
+				for _, testType := range producer.TestsTypes {
+					if testType.Name == key.TestName && testType.Dimension == key.Dimension && testType.SelectPreWrites == key.SelectPreWrites {
+						present = true
+					}
+				}
+				if !present {
+					newTestType := TestType{key.TestName, key.Dimension, key.SelectPreWrites}
+					producer.TestsTypes = append(producer.TestsTypes, newTestType)
+				}
+			}
+		}
+		producersAr[idx] = producer
+	}
+	return producersAr
+}
+
+func (calcIMpl *Calculator) getLabelSTDGerror(labels map[string][]ResultValue) (float64, float64) {
+	valuesSTDAr := []float64{0}
+	valuesGerrAr := []float64{0}
+	for _, resultValueAr := range labels {
+
+		for _, resultValue := range resultValueAr {
+			if resultValue.Value > 0 && !math.IsNaN(resultValue.STD) {
+				valuesSTDAr = append(valuesSTDAr, resultValue.STD)
+				valuesGerrAr = append(valuesGerrAr, resultValue.Lerror)
+			}
+		}
+		stdValue := 0.00
+		if len(valuesSTDAr) > 1 {
+			stdValue, _ = stats.StandardDeviationSample(valuesSTDAr)
+		}
+
+		stdValue, _ = stats.Round(stdValue, 2)
+		gerrValue := global.Average(valuesGerrAr)
+		return stdValue, gerrValue
+	}
+	return 0, 0
+}
+
+func (calcIMpl *Calculator) calculateProducerSTDGerror(ar []Producer) []Producer {
+	valuesSTDAr := []float64{0}
+	valuesGerrAr := []float64{0}
+	for idx, producer := range ar {
+		for _, testResult := range producer.TestsResults {
+			valuesSTDAr = append(valuesSTDAr, testResult.STD)
+			valuesGerrAr = append(valuesGerrAr, testResult.Gerror)
+		}
+		stdValue := 0.0
+		if len(valuesSTDAr) > 1 {
+			stdValue, _ = stats.StandardDeviationSample(valuesSTDAr)
+			stdValue, _ = stats.Round(stdValue, 2)
+		}
+		gerrValue := global.Average(valuesGerrAr)
+		producer.STD = stdValue
+		producer.Gerror = gerrValue
+		ar[idx] = producer
+	}
+	return ar
+
 }

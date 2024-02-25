@@ -86,9 +86,11 @@ func main() {
 	calculator := new(DO.Calculator)
 	calculator.Init()
 	testsResults := calculator.BuildResults(testCollection)
+	producersAr := calculator.GroupByProducers()
 
 	log.Debugf("Test Results %d", len(testsResults))
 	log.Debugf("Test collection %d", len(testCollection))
+	log.Debugf("Test collection %d", len(producersAr))
 	if err1 != nil {
 		log.Error(err1)
 		exitWithCode(1)

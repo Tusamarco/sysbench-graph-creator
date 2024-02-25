@@ -14,6 +14,20 @@ const (
 	POSTWRITE = 1
 )
 
+type Producer struct {
+	MySQLProducer string
+	MySQLVersion  string
+	TestsResults  map[TestKey]ResultTest
+	TestsTypes    []TestType
+	STD           float64
+	Gerror        float64
+}
+
+type TestType struct {
+	Name            string
+	Dimension       string
+	SelectPreWrites int
+}
 type TestKey struct {
 	ActionType         int
 	TestCollectionName string
@@ -29,17 +43,19 @@ type ResultValueKey struct {
 }
 
 type ResultValue struct {
-	threadNumber int
-	value        float64
+	ThreadNumber int
+	Label        string
+	Value        float64
 	STD          float64
 	Lerror       float64
 }
 
 type ResultTest struct {
-	Key    TestKey
-	Labels map[string][]ResultValue
-	STD    float64
-	Gerror float64
+	Key        TestKey
+	Labels     map[string][]ResultValue
+	Executions int
+	STD        float64
+	Gerror     float64
 }
 
 type TestCollection struct {

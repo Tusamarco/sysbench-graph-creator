@@ -459,3 +459,15 @@ func ReplaceString(input string, pattern string, replacewith string) string {
 
 	return output
 }
+
+func IsNumeric(word string) bool {
+	return regexp.MustCompile(`\d`).MatchString(word)
+}
+
+func Average(xs []float64) float64 {
+	total := 0.0
+	for _, v := range xs {
+		total += v
+	}
+	return total / float64(len(xs))
+}
