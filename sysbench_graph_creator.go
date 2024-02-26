@@ -88,9 +88,13 @@ func main() {
 	testsResults := calculator.BuildResults(testCollection)
 	producersAr := calculator.GroupByProducers()
 
-	log.Debugf("Test Results %d", len(testsResults))
-	log.Debugf("Test collection %d", len(testCollection))
-	log.Debugf("Test collection %d", len(producersAr))
+	log.Infof("Test Results %d", len(testsResults))
+	log.Infof("Test collection %d", len(testCollection))
+	log.Infof("# of producers %d", len(producersAr))
+	log.Infof("Producers STD and Error")
+	for _, producer := range producersAr {
+		log.Infof("Producer: %s; %s  STD: %.4f ERR(pct): %.4f", producer.MySQLProducer, producer.MySQLVersion, producer.STD, producer.Gerror)
+	}
 	if err1 != nil {
 		log.Error(err1)
 		exitWithCode(1)

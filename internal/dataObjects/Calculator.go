@@ -91,14 +91,14 @@ func (calcIMpl *Calculator) loopCollections() {
 We loop all the tests create an array of them group by tests
 calculate the results
 */
-func (calcIMpl *Calculator) loopTests(colectionMap map[int]TestCollection) bool {
+func (calcIMpl *Calculator) loopTests(collectionMap map[int]TestCollection) bool {
 	// first we identify which collection has most tests (in case we have some of them failed and not processed.
 	myHigherTestLen := 0
 	var leadCollection TestCollection
 	var OK bool
 
 	// We identify the leading collection, remove it by the map and then start to use it to extract the tests from all
-	for _, col := range colectionMap {
+	for _, col := range collectionMap {
 		if len(col.Tests) > myHigherTestLen {
 			myHigherTestLen = len(col.Tests)
 			leadCollection = col
@@ -106,7 +106,7 @@ func (calcIMpl *Calculator) loopTests(colectionMap map[int]TestCollection) bool 
 	}
 	// last check to verify we are working on a valid collection
 	if leadCollection.Name != "" && len(leadCollection.Tests) > 0 {
-		delete(colectionMap, leadCollection.RunNumber)
+		delete(collectionMap, leadCollection.RunNumber)
 		for id, myTest := range leadCollection.Tests {
 			testAr := []Test{myTest}
 
@@ -118,7 +118,7 @@ func (calcIMpl *Calculator) loopTests(colectionMap map[int]TestCollection) bool 
 				myTest.ActionType,
 				leadCollection.SelectPostWrites)
 
-			for _, col := range colectionMap {
+			for _, col := range collectionMap {
 				testAr = append(testAr, col.Tests[id])
 			}
 
@@ -167,7 +167,7 @@ func (calcIMpl *Calculator) transformLablesForMultipleExecutions(test []Test) (b
 	labels := make(map[string][]ResultValue)
 	for _, label := range test[0].Labels {
 		resultValueAr := []ResultValue{}
-		log.Debugf("processing label %s", label)
+		//log.Debugf("processing label %s", label)
 
 		//we need to loop all the threads and get the values for the label
 		tempValuesAr := []float64{}
@@ -177,7 +177,7 @@ func (calcIMpl *Calculator) transformLablesForMultipleExecutions(test []Test) (b
 			for _, th := range test {
 				for thLabel, thResult := range th.ThreadExec[threadI].Result {
 					if thLabel == label {
-						log.Debugf("Processing main: %s current: %s  Execution: %d Thread: %d result %.4f", label, thLabel, th.RunNumber, threadI, thResult)
+						//log.Debugf("Processing main: %s current: %s  Execution: %d Thread: %d result %.4f", label, thLabel, th.RunNumber, threadI, thResult)
 						tempValuesAr = append(tempValuesAr, thResult)
 					}
 
@@ -187,7 +187,7 @@ func (calcIMpl *Calculator) transformLablesForMultipleExecutions(test []Test) (b
 			//calculate final value, std and gerror
 			resultValueAr = append(resultValueAr, evaluateMultipleExecutionsValues(tempValuesAr, label, threadI))
 			tempValuesAr = []float64{}
-			log.Debugf("")
+			//log.Debugf("")
 		}
 
 		sort.SliceStable(resultValueAr, func(i, j int) bool {
@@ -203,14 +203,17 @@ func (calcIMpl *Calculator) transformLablesForMultipleExecutions(test []Test) (b
 // here we do the sdt calculation and gerror
 func evaluateMultipleExecutionsValues(arValues []float64, label string, threadId int) ResultValue {
 
-	medianValue, _ := stats.Median(arValues)
-	medianValue, _ = stats.Round(medianValue, 2)
-	stdValue, _ := stats.StandardDeviationSample(arValues)
+	avgValue := global.Average(arValues)
+	avgValue, _ = stats.Round(avgValue, 2)
+	stdValue, _ := stats.StdDevP(arValues)
 	stdValue, _ = stats.Round(stdValue, 2)
-	errorV := stdValue / medianValue * 100
-	log.Debugf("Thread %d Label %s Median %.4f Std %.4f  Distance(error) %.4f", threadId, label, medianValue, stdValue, errorV)
+	errorV := stdValue / avgValue * 100
+	if math.IsNaN(errorV) {
+		errorV = 0
+	}
+	//log.Debugf("Thread %d Label %s Average %.4f Std %.4f  Distance(error) %.4f", threadId, label, avgValue, stdValue, errorV)
 
-	return ResultValue{threadId, label, medianValue, stdValue, errorV}
+	return ResultValue{threadId, label, avgValue, stdValue, errorV}
 }
 
 // Before processing we transform the dataset from rows into column to be able to calculate the median, std and gerror [Single run case]
@@ -263,33 +266,76 @@ func (calcIMpl *Calculator) GroupByProducers() []Producer {
 
 }
 func (calcIMpl *Calculator) assignTestsResultsToProducers(producersAr []Producer) []Producer {
+	tmpArrayTypes := []TestType{}
 
 	for idx, producer := range producersAr {
+		for _, dim := range DIMENSIONS() {
+			for _, prePost := range PREPOSTWRITE() {
+				for _, AType := range ACTIONTYPES() {
 
-		for key, value := range calcIMpl.TestResults {
-			if producer.MySQLProducer == key.MySQLProducer && producer.MySQLVersion == key.MySQLVersion {
-				producer.TestsResults[key] = value
-				present := false
-				for _, testType := range producer.TestsTypes {
-					if testType.Name == key.TestName && testType.Dimension == key.Dimension && testType.SelectPreWrites == key.SelectPreWrites {
-						present = true
+					tmpArrayTypes = []TestType{}
+					for key, _ := range calcIMpl.TestResults {
+
+						if key.MySQLProducer == producer.MySQLProducer && key.MySQLVersion == producer.MySQLVersion &&
+							key.Dimension == dim && key.ActionType == AType && key.SelectPreWrites == prePost {
+
+							present := false
+							for _, testType := range producer.TestsTypes {
+								//testKey := TestKey{AType, key.TestCollectionName, producer.MySQLProducer, producer.MySQLVersion, prePost, key.TestName, dim}
+								if testType.Name == key.TestName &&
+									testType.ActionType == AType &&
+									testType.Dimension == dim &&
+									testType.SelectPreWrites == prePost {
+									present = true
+									break
+								}
+							}
+							for _, testType := range tmpArrayTypes {
+								//testKey := TestKey{AType, key.TestCollectionName, producer.MySQLProducer, producer.MySQLVersion, prePost, key.TestName, dim}
+								if testType.Name == key.TestName &&
+									testType.ActionType == AType &&
+									testType.Dimension == dim &&
+									testType.SelectPreWrites == prePost {
+									present = true
+									break
+								}
+							}
+							if !present {
+								newTestType := TestType{key.TestName, key.Dimension, key.SelectPreWrites, key.ActionType}
+								//producer.TestsTypes = append(producer.TestsTypes, newTestType)
+								tmpArrayTypes = append(tmpArrayTypes, newTestType)
+							}
+						}
 					}
-				}
-				if !present {
-					newTestType := TestType{key.TestName, key.Dimension, key.SelectPreWrites}
-					producer.TestsTypes = append(producer.TestsTypes, newTestType)
+					//sort TestType and we will use it for getting tests in order
+					sort.SliceStable(tmpArrayTypes, func(i, j int) bool {
+						return tmpArrayTypes[i].Name < tmpArrayTypes[j].Name
+					})
+					producer.TestsTypes = AppendArrayToArray(producer.TestsTypes, tmpArrayTypes)
 				}
 			}
 		}
+
+		//let us load the tests results as much as possible in order
+		//for key, testResult := range calcIMpl.TestResults {
+		//
+		//}
+
 		producersAr[idx] = producer
 	}
+
+	log.Infof("How many I have General: %d ; Producer 1: %d ; Producer2: %d", len(calcIMpl.TestResults), len(producersAr[0].TestsResults), len(producersAr[1].TestsResults))
 	return producersAr
 }
 
 func (calcIMpl *Calculator) getLabelSTDGerror(labels map[string][]ResultValue) (float64, float64) {
 	valuesSTDAr := []float64{0}
 	valuesGerrAr := []float64{0}
-	for _, resultValueAr := range labels {
+
+	resulTestSTDAr := []float64{0}
+	resulTestGerrAr := []float64{0}
+
+	for label, resultValueAr := range labels {
 
 		for _, resultValue := range resultValueAr {
 			if resultValue.Value > 0 && !math.IsNaN(resultValue.STD) {
@@ -299,27 +345,46 @@ func (calcIMpl *Calculator) getLabelSTDGerror(labels map[string][]ResultValue) (
 		}
 		stdValue := 0.00
 		if len(valuesSTDAr) > 1 {
-			stdValue, _ = stats.StandardDeviationSample(valuesSTDAr)
+			stdValue = global.Average(valuesSTDAr)
 		}
 
 		stdValue, _ = stats.Round(stdValue, 2)
 		gerrValue := global.Average(valuesGerrAr)
-		return stdValue, gerrValue
+		log.Debugf("Label: %s  STD: %.4f ERR(pct): %.4f", label, stdValue, gerrValue)
+
+		resulTestSTDAr = append(resulTestSTDAr, stdValue)
+		resulTestGerrAr = append(resulTestGerrAr, gerrValue)
+
 	}
-	return 0, 0
+	finalSTD := global.Average(resulTestSTDAr)
+	finalGerr := global.Average(resulTestGerrAr)
+	log.Debugf("Final :  STD: %.4f ERR(pct): %.4f", finalSTD, finalGerr)
+	return finalSTD, finalGerr
 }
 
 func (calcIMpl *Calculator) calculateProducerSTDGerror(ar []Producer) []Producer {
 	valuesSTDAr := []float64{0}
 	valuesGerrAr := []float64{0}
 	for idx, producer := range ar {
-		for _, testResult := range producer.TestsResults {
-			valuesSTDAr = append(valuesSTDAr, testResult.STD)
-			valuesGerrAr = append(valuesGerrAr, testResult.Gerror)
+		for _, tName := range producer.TestsTypes {
+			for key, testResult := range producer.TestsResults {
+				if key.TestName == tName.Name && key.Dimension == SMALL && key.SelectPreWrites == PREWRITE {
+					valuesSTDAr = append(valuesSTDAr, testResult.STD)
+					valuesGerrAr = append(valuesGerrAr, testResult.Gerror)
+					log.Infof("Producer: %s; %s  Test: %s  STD: %.4f ERR(pct): %.4f", producer.MySQLProducer, producer.MySQLVersion, testResult.Key.TestName, testResult.STD, testResult.Gerror)
+				}
+			}
+
 		}
+
+		//for _, testResult := range producer.TestsResults {
+		//	log.Infof("Producer: %s; %s  Test: %s  STD: %.4f ERR(pct): %.4f", producer.MySQLProducer, producer.MySQLVersion, testResult.Key.TestName, testResult.STD, testResult.Gerror)
+		//	valuesSTDAr = append(valuesSTDAr, testResult.STD)
+		//	valuesGerrAr = append(valuesGerrAr, testResult.Gerror)
+		//}
 		stdValue := 0.0
 		if len(valuesSTDAr) > 1 {
-			stdValue, _ = stats.StandardDeviationSample(valuesSTDAr)
+			stdValue = global.Average(valuesSTDAr)
 			stdValue, _ = stats.Round(stdValue, 2)
 		}
 		gerrValue := global.Average(valuesGerrAr)
@@ -329,4 +394,10 @@ func (calcIMpl *Calculator) calculateProducerSTDGerror(ar []Producer) []Producer
 	}
 	return ar
 
+}
+func AppendArrayToArray(receiver []TestType, giver []TestType) []TestType {
+	for _, element := range giver {
+		receiver = append(receiver, element)
+	}
+	return receiver
 }

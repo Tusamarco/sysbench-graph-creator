@@ -12,7 +12,25 @@ const (
 
 	PREWRITE  = 0
 	POSTWRITE = 1
+
+	SMALL = "small"
+	LARGE = "large"
+
+	TPCC = "tpcc"
+	SB   = "sysbench"
+	DBT3 = "dbt3"
 )
+
+func DIMENSIONS() []string {
+	return []string{SMALL, LARGE}
+}
+
+func ACTIONTYPES() []int {
+	return []int{READ, WRITE}
+}
+func PREPOSTWRITE() []int {
+	return []int{PREWRITE, POSTWRITE}
+}
 
 type Producer struct {
 	MySQLProducer string
@@ -27,6 +45,7 @@ type TestType struct {
 	Name            string
 	Dimension       string
 	SelectPreWrites int
+	ActionType      int
 }
 type TestKey struct {
 	ActionType         int

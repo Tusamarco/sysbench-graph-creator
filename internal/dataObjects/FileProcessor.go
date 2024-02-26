@@ -205,7 +205,7 @@ func (tescImpl *TestCollection) getTestCollectionMeta(meta string, path string) 
 	*/
 	for i := 0; i < length; i++ {
 		values := strings.Split(metaTag[i], "=")
-		log.Debugf("Meta argument parsing %s", values)
+		//log.Debugf("Meta argument parsing %s", values)
 		if len(values) > 0 {
 			trimmed := strings.Trim(values[0], " ")
 			switch trimmed {
@@ -305,7 +305,7 @@ func (tescImpl *TestCollection) getTestMeta(line string, path string, fileProc *
 		//META: testIdentifyer=PS8042_iron_ssd2;dimension=large;actionType=select;runNumber=1;execCommand=run;subtest=select_run_inlist;execDate=2024-02-02_12_12_27;engine=innodb
 		for i := 0; i < length; i++ {
 			values := strings.Split(metaTag[i], "=")
-			log.Debugf("Meta argument parsing %s", values)
+			//log.Debugf("Meta argument parsing %s", values)
 			if len(values) > 0 {
 				trimmed := strings.Trim(values[0], " ")
 				switch trimmed {

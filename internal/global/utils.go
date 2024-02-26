@@ -471,3 +471,10 @@ func Average(xs []float64) float64 {
 	}
 	return total / float64(len(xs))
 }
+
+func AppendArrayToArray(receiver []interface{}, giver []interface{}) []interface{} {
+	for _, element := range giver {
+		receiver = append(receiver, element)
+	}
+	return receiver
+}
