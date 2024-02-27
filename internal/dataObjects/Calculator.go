@@ -178,18 +178,13 @@ func (calcIMpl *Calculator) transformLablesForMultipleExecutions(test []Test) (b
 			return keys[i] < keys[j]
 		})
 
-		//sort.Sort(threadsAr)
-		//TO DO use labels to loop all executions (tests) and then use keys for threads
-
-		for _, thread := range threadsAr {
-			threadI := thread.Thread
+		for _, threadI := range keys {
 			for _, th := range test {
 				for thLabel, thResult := range th.ThreadExec[threadI].Result {
 					if thLabel == label {
 						//log.Debugf("Processing main: %s current: %s  Execution: %d Thread: %d result %.4f", label, thLabel, th.RunNumber, threadI, thResult)
 						tempValuesAr = append(tempValuesAr, thResult)
 					}
-
 				}
 			}
 
