@@ -171,8 +171,17 @@ func (calcIMpl *Calculator) transformLablesForMultipleExecutions(test []Test) (b
 
 		//we need to loop all the threads and get the values for the label
 		tempValuesAr := []float64{}
+		threadsAr := test[0].ThreadExec
 
-		for _, thread := range test[0].ThreadExec {
+		keys := GetKeysFromMap(threadsAr)
+		sort.SliceStable(keys, func(i, j int) bool {
+			return keys[i] < keys[j]
+		})
+
+		//sort.Sort(threadsAr)
+		//TO DO use labels to loop all executions (tests) and then use keys for threads
+
+		for _, thread := range threadsAr {
 			threadI := thread.Thread
 			for _, th := range test {
 				for thLabel, thResult := range th.ThreadExec[threadI].Result {
@@ -189,7 +198,7 @@ func (calcIMpl *Calculator) transformLablesForMultipleExecutions(test []Test) (b
 			tempValuesAr = []float64{}
 			//log.Debugf("")
 		}
-
+		//here ============================
 		sort.SliceStable(resultValueAr, func(i, j int) bool {
 			return resultValueAr[i].ThreadNumber < resultValueAr[j].ThreadNumber
 		})
@@ -205,7 +214,8 @@ func evaluateMultipleExecutionsValues(arValues []float64, label string, threadId
 
 	avgValue := global.Average(arValues)
 	avgValue, _ = stats.Round(avgValue, 2)
-	stdValue, _ := stats.StdDevP(arValues)
+	//stdValue, _ := stats.StdDevP(arValues)
+	stdValue := global.StandardDevitation(arValues)
 	stdValue, _ = stats.Round(stdValue, 2)
 	errorV := stdValue / avgValue * 100
 	if math.IsNaN(errorV) {
@@ -254,7 +264,7 @@ func (calcIMpl *Calculator) GroupByProducers() []Producer {
 			}
 		}
 		if !present {
-			newProducer := Producer{key.MySQLProducer, key.MySQLVersion, make(map[TestKey]ResultTest), []TestType{}, 0.0, 0.0}
+			newProducer := Producer{key.MySQLProducer, key.MySQLVersion, []ResultTest{}, []TestType{}, 0.0, 0.0, 0, 0, 0, 0}
 			log.Debugf("Adding producer %v", newProducer)
 			producersAr = append(producersAr, newProducer)
 		}
@@ -301,7 +311,7 @@ func (calcIMpl *Calculator) assignTestsResultsToProducers(producersAr []Producer
 								}
 							}
 							if !present {
-								newTestType := TestType{key.TestName, key.Dimension, key.SelectPreWrites, key.ActionType}
+								newTestType := TestType{key.TestName, key.Dimension, key.SelectPreWrites, key.ActionType, key.TestCollectionName}
 								//producer.TestsTypes = append(producer.TestsTypes, newTestType)
 								tmpArrayTypes = append(tmpArrayTypes, newTestType)
 							}
@@ -320,6 +330,14 @@ func (calcIMpl *Calculator) assignTestsResultsToProducers(producersAr []Producer
 		//for key, testResult := range calcIMpl.TestResults {
 		//
 		//}
+		for _, testType := range producer.TestsTypes {
+			testKey := TestKey{testType.ActionType, testType.TestCollectionName, producer.MySQLProducer, producer.MySQLVersion, testType.SelectPreWrites, testType.Name, testType.Dimension}
+			for key, testResult := range calcIMpl.TestResults {
+				if testKey == key {
+					producer.TestsResults = append(producer.TestsResults, testResult)
+				}
+			}
+		}
 
 		producersAr[idx] = producer
 	}
@@ -350,7 +368,7 @@ func (calcIMpl *Calculator) getLabelSTDGerror(labels map[string][]ResultValue) (
 
 		stdValue, _ = stats.Round(stdValue, 2)
 		gerrValue := global.Average(valuesGerrAr)
-		log.Debugf("Label: %s  STD: %.4f ERR(pct): %.4f", label, stdValue, gerrValue)
+		log.Debugf("Label: %s  STD: %.4f Dist(pct): %.4f", label, stdValue, gerrValue)
 
 		resulTestSTDAr = append(resulTestSTDAr, stdValue)
 		resulTestGerrAr = append(resulTestGerrAr, gerrValue)
@@ -358,38 +376,65 @@ func (calcIMpl *Calculator) getLabelSTDGerror(labels map[string][]ResultValue) (
 	}
 	finalSTD := global.Average(resulTestSTDAr)
 	finalGerr := global.Average(resulTestGerrAr)
-	log.Debugf("Final :  STD: %.4f ERR(pct): %.4f", finalSTD, finalGerr)
+	log.Debugf("Final :  STD: %.4f Dist(pct): %.4f", finalSTD, finalGerr)
 	return finalSTD, finalGerr
 }
 
 func (calcIMpl *Calculator) calculateProducerSTDGerror(ar []Producer) []Producer {
-	valuesSTDAr := []float64{0}
-	valuesGerrAr := []float64{0}
+	valuesSTDArPre := []float64{0}
+	valuesGerrArPre := []float64{0}
+	valuesSTDArPost := []float64{0}
+	valuesGerrArPost := []float64{0}
+	valuesSTDArWrite := []float64{0}
+	valuesGerrArWrite := []float64{0}
+
 	for idx, producer := range ar {
-		for _, tName := range producer.TestsTypes {
-			for key, testResult := range producer.TestsResults {
-				if key.TestName == tName.Name && key.Dimension == SMALL && key.SelectPreWrites == PREWRITE {
-					valuesSTDAr = append(valuesSTDAr, testResult.STD)
-					valuesGerrAr = append(valuesGerrAr, testResult.Gerror)
-					log.Infof("Producer: %s; %s  Test: %s  STD: %.4f ERR(pct): %.4f", producer.MySQLProducer, producer.MySQLVersion, testResult.Key.TestName, testResult.STD, testResult.Gerror)
-				}
+		for _, testResult := range producer.TestsResults {
+			if testResult.Key.ActionType < WRITE && testResult.Key.SelectPreWrites == PREWRITE {
+				valuesSTDArPre = append(valuesSTDArPre, testResult.STD)
+				valuesGerrArPre = append(valuesGerrArPre, testResult.Gerror)
 			}
-
+			if testResult.Key.ActionType < WRITE && testResult.Key.SelectPreWrites == POSTWRITE {
+				valuesSTDArPost = append(valuesSTDArPost, testResult.STD)
+				valuesGerrArPost = append(valuesGerrArPost, testResult.Gerror)
+			}
+			if testResult.Key.ActionType == WRITE {
+				valuesSTDArWrite = append(valuesSTDArWrite, testResult.STD)
+				valuesGerrArWrite = append(valuesGerrArWrite, testResult.Gerror)
+			}
+			//log.Infof("Producer: %s; %s  Test: %s  STD: %.4f Dist(pct): %.4f", producer.MySQLProducer, producer.MySQLVersion, testResult.Key.TestName, testResult.STD, testResult.Gerror)
 		}
 
-		//for _, testResult := range producer.TestsResults {
-		//	log.Infof("Producer: %s; %s  Test: %s  STD: %.4f ERR(pct): %.4f", producer.MySQLProducer, producer.MySQLVersion, testResult.Key.TestName, testResult.STD, testResult.Gerror)
-		//	valuesSTDAr = append(valuesSTDAr, testResult.STD)
-		//	valuesGerrAr = append(valuesGerrAr, testResult.Gerror)
-		//}
-		stdValue := 0.0
-		if len(valuesSTDAr) > 1 {
-			stdValue = global.Average(valuesSTDAr)
-			stdValue, _ = stats.Round(stdValue, 2)
+		stdValuePre := 0.0
+		if len(valuesSTDArPre) > 1 {
+			stdValuePre = global.Average(valuesSTDArPre)
+			stdValuePre, _ = stats.Round(stdValuePre, 2)
 		}
-		gerrValue := global.Average(valuesGerrAr)
-		producer.STD = stdValue
-		producer.Gerror = gerrValue
+		gerrValuePre := global.Average(valuesGerrArPre)
+
+		stdValuePost := 0.0
+		if len(valuesSTDArPost) > 1 {
+			stdValuePost = global.Average(valuesSTDArPost)
+			stdValuePost, _ = stats.Round(stdValuePost, 2)
+		}
+		gerrValuePost := global.Average(valuesGerrArPost)
+
+		stdValueWrite := 0.0
+		if len(valuesSTDArWrite) > 1 {
+			stdValueWrite = global.Average(valuesSTDArWrite)
+			stdValueWrite, _ = stats.Round(stdValueWrite, 2)
+		}
+		gerrValueWrite := global.Average(valuesGerrArWrite)
+
+		producer.STDReadPre = stdValuePre
+		producer.GerrorReadPre = gerrValuePre
+
+		producer.STDReadPost = stdValuePost
+		producer.GerrorReadPost = gerrValuePost
+
+		producer.STDRWrite = stdValueWrite
+		producer.GerrorWrite = gerrValueWrite
+
 		ar[idx] = producer
 	}
 	return ar
@@ -400,4 +445,13 @@ func AppendArrayToArray(receiver []TestType, giver []TestType) []TestType {
 		receiver = append(receiver, element)
 	}
 	return receiver
+}
+
+func GetKeysFromMap(in map[int]Execution) []int {
+	keys := make([]int, 0, len(in))
+	for key, _ := range in {
+		keys = append(keys, key)
+	}
+
+	return keys
 }

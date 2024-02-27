@@ -33,19 +33,24 @@ func PREPOSTWRITE() []int {
 }
 
 type Producer struct {
-	MySQLProducer string
-	MySQLVersion  string
-	TestsResults  map[TestKey]ResultTest
-	TestsTypes    []TestType
-	STD           float64
-	Gerror        float64
+	MySQLProducer  string
+	MySQLVersion   string
+	TestsResults   []ResultTest
+	TestsTypes     []TestType
+	STDReadPre     float64
+	GerrorReadPre  float64
+	STDReadPost    float64
+	GerrorReadPost float64
+	STDRWrite      float64
+	GerrorWrite    float64
 }
 
 type TestType struct {
-	Name            string
-	Dimension       string
-	SelectPreWrites int
-	ActionType      int
+	Name               string
+	Dimension          string
+	SelectPreWrites    int
+	ActionType         int
+	TestCollectionName string
 }
 type TestKey struct {
 	ActionType         int

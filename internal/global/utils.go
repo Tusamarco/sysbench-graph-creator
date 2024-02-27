@@ -23,6 +23,7 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 	"io"
+	"math"
 	"os"
 	"reflect"
 	"regexp"
@@ -470,6 +471,18 @@ func Average(xs []float64) float64 {
 		total += v
 	}
 	return total / float64(len(xs))
+}
+func StandardDevitation(in []float64) float64 {
+	mean := Average(in)
+	result := 0.0
+
+	for _, element := range in {
+		result += math.Pow(element-mean, 2)
+	}
+	result = result / float64(len(in))
+	result = math.Sqrt(result)
+	return result
+
 }
 
 func AppendArrayToArray(receiver []interface{}, giver []interface{}) []interface{} {

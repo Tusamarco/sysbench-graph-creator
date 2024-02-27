@@ -91,9 +91,12 @@ func main() {
 	log.Infof("Test Results %d", len(testsResults))
 	log.Infof("Test collection %d", len(testCollection))
 	log.Infof("# of producers %d", len(producersAr))
-	log.Infof("Producers STD and Error")
+	log.Infof("Producers STD and Distance")
 	for _, producer := range producersAr {
-		log.Infof("Producer: %s; %s  STD: %.4f ERR(pct): %.4f", producer.MySQLProducer, producer.MySQLVersion, producer.STD, producer.Gerror)
+		log.Infof("Producer: %s; %s: ", producer.MySQLProducer, producer.MySQLVersion)
+		log.Infof("		READS PRE WRITES  STD: %.4f Dist(pct): %.4f", producer.STDReadPre, producer.GerrorReadPre)
+		log.Infof("		READS POST WRITES  STD: %.4f Dist(pct): %.4f", producer.STDReadPost, producer.GerrorReadPost)
+		log.Infof("		WRITES  STD: %.4f Dist(pct): %.4f", producer.STDRWrite, producer.GerrorWrite)
 	}
 	if err1 != nil {
 		log.Error(err1)
