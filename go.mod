@@ -4,11 +4,12 @@ go 1.21
 
 require (
 	github.com/Tusamarco/toml v0.3.1
-	github.com/go-echarts/go-echarts/v2 v2.3.3
 	github.com/montanaflynn/stats v0.7.1
 	github.com/schollz/progressbar/v3 v3.14.1
 	github.com/sirupsen/logrus v1.9.3
+	github.com/wcharczuk/go-chart/v2 v2.1.1
 	golang.org/x/text v0.14.0
+
 )
 
 require (
