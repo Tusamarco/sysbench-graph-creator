@@ -102,6 +102,10 @@ func main() {
 		log.Error(err1)
 		exitWithCode(1)
 	}
+	graph := new(DO.GraphGenerator)
+	graph.Init(config, producersAr)
+	graph.Test()
+
 	exitWithCode(0)
 	//log.Debug(len(myArFiles))
 }
