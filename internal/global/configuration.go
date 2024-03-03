@@ -22,6 +22,10 @@ type Parser struct {
 type Render struct {
 	GraphType       string `toml:graphType`
 	DestinationPath string `toml:destinationPath`
+	PrintStats      bool   `toml:printStats`
+	PrintData       bool   `toml:printData`
+	HttpServerPort  int    `toml:httpServerPort`
+	HttpServerIp    string `toml:httpServerIp`
 }
 
 // Main structure working as container for the configuration sections

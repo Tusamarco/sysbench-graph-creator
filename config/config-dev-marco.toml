@@ -7,9 +7,14 @@ sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_pr
 [render]
 graphType="column"
 destinationPath=""
+printStats=true
+printData=true
+httpServerPort=8089
+httpServerIp="localhost"
+
 
 [global]
-testName=""
+testName="Comparing PS VS MySQL"
 logLevel = "info"
 logTarget = "stdout" #stdout | file
 logFile = "/Users/marcotusa/tmp/sysbench_graph_creator.log"

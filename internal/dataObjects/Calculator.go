@@ -259,7 +259,7 @@ func (calcIMpl *Calculator) GroupByProducers() []Producer {
 			}
 		}
 		if !present {
-			newProducer := Producer{key.MySQLProducer, key.MySQLVersion, []ResultTest{}, []TestType{}, 0.0, 0.0, 0, 0, 0, 0}
+			newProducer := Producer{key.MySQLProducer, key.MySQLVersion, []ResultTest{}, []TestType{}, "", 0.0, 0.0, 0, 0, 0, 0}
 			log.Debugf("Adding producer %v", newProducer)
 			producersAr = append(producersAr, newProducer)
 		}
@@ -307,6 +307,9 @@ func (calcIMpl *Calculator) assignTestsResultsToProducers(producersAr []Producer
 							}
 							if !present {
 								newTestType := TestType{key.TestName, key.Dimension, key.SelectPreWrites, key.ActionType, key.TestCollectionName}
+								if producer.TestCollectionsName == "" {
+									producer.TestCollectionsName = newTestType.TestCollectionName
+								}
 								//producer.TestsTypes = append(producer.TestsTypes, newTestType)
 								tmpArrayTypes = append(tmpArrayTypes, newTestType)
 							}

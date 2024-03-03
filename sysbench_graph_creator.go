@@ -104,11 +104,13 @@ func main() {
 	}
 	graph := new(DO.GraphGenerator)
 	graph.Init(config, producersAr)
-	graph.Test()
+	//graph.RenderReults()
+	graph.Test3()
 
 	exitWithCode(0)
 	//log.Debug(len(myArFiles))
 }
+
 func portingCommandOption(config global.Configuration) {
 	if sourcePath != "" {
 		config.Parser.SourceDataPath = sourcePath
