@@ -5,6 +5,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"math"
 	"sort"
+	"strings"
 	global "sysbench-graph-creator/internal/global"
 )
 
@@ -218,7 +219,7 @@ func evaluateMultipleExecutionsValues(arValues []float64, label string, threadId
 	}
 	//log.Debugf("Thread %d Label %s Average %.4f Std %.4f  Distance(error) %.4f", threadId, label, avgValue, stdValue, errorV)
 
-	return ResultValue{threadId, label, avgValue, stdValue, errorV}
+	return ResultValue{threadId, strings.Trim(label, " "), avgValue, stdValue, errorV}
 }
 
 // Before processing we transform the dataset from rows into column to be able to calculate the median, std and gerror [Single run case]
@@ -233,7 +234,7 @@ func (calcIMpl *Calculator) transformLablesForSingleExecution(test Test) (bool, 
 
 			for thLabel, thResult := range th.Result {
 				if thLabel == label {
-					resultValueAr = append(resultValueAr, ResultValue{thID, label, thResult, 0, 0})
+					resultValueAr = append(resultValueAr, ResultValue{thID, strings.Trim(label, " "), thResult, 0, 0})
 				}
 
 			}

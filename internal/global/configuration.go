@@ -26,6 +26,7 @@ type Render struct {
 	PrintData       bool   `toml:printData`
 	HttpServerPort  int    `toml:httpServerPort`
 	HttpServerIp    string `toml:httpServerIp`
+	Labels          string `toml:labels`
 }
 
 // Main structure working as container for the configuration sections

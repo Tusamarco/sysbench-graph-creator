@@ -104,8 +104,8 @@ func main() {
 	}
 	graph := new(DO.GraphGenerator)
 	graph.Init(config, producersAr)
-	//graph.RenderReults()
-	graph.Test3()
+	graph.RenderReults()
+	//graph.Test3()
 
 	exitWithCode(0)
 	//log.Debug(len(myArFiles))

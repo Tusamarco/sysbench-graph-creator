@@ -3,6 +3,7 @@ package dataObjects
 import (
 	"fmt"
 	"github.com/go-echarts/go-echarts/v2/components"
+	"github.com/go-echarts/go-echarts/v2/opts"
 	log "github.com/sirupsen/logrus"
 	"github.com/wcharczuk/go-chart/v2"
 	"io"
@@ -10,25 +11,33 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	global "sysbench-graph-creator/internal/global"
 	"time"
 )
 
 type chartItem struct {
-	label string
-	order int
-	axis  int
-	data  []float64
-	color string
+	label    string
+	provider string
+	order    int
+	axis     int
+	data     []opts.BarData
+	color    string
+	labelX   string
+	labelY   string
 }
 
 type charTest struct {
-	title        string
-	charType     string
-	labelX       string
-	labelY       string
+	title    string
+	charType string
+	//labelX       string
+	//labelY       string
 	numProviders int
 	chartItems   []chartItem
+	prePost      int
+	dimension    string
+	actionType   int
+	threads      []int
 }
 
 const (
@@ -36,6 +45,7 @@ const (
 	HTTPSERVERPORTDEFAULT = 8089
 	PERCONACOLOR          = "orange"
 	MYSQLCOLOR            = "blue"
+	XAXISLABELDEFAULT     = "Threads"
 )
 
 //https://github.com/go-echarts/go-echarts
@@ -44,7 +54,9 @@ type GraphGenerator struct {
 	configuration global.Configuration
 	producers     []Producer
 	testName      string
-	charts        map[string]charTest
+	chartsData    []charTest
+	chartsStats   map[string]charTest
+	labels        []string
 }
 
 func (Graph *GraphGenerator) checkConfig() bool {
@@ -76,7 +88,9 @@ func (Graph *GraphGenerator) Init(inConfig global.Configuration, inProducers []P
 	Graph.producers = inProducers
 	Graph.configuration = inConfig
 	Graph.checkConfig()
-	Graph.charts = make(map[string]charTest)
+	Graph.chartsData = []charTest{}
+	Graph.chartsStats = make(map[string]charTest)
+	Graph.labels = strings.Split(inConfig.Render.Labels, ",")
 
 }
 
@@ -193,27 +207,129 @@ func logRequest(handler http.Handler) http.Handler {
 }
 
 func (Graph *GraphGenerator) RenderReults() bool {
-	if Graph.configuration.Render.PrintStats {
-		Graph.printStat()
-	}
+	producersLen := len(Graph.producers)
+	//emptyResult := ResultTest{}
 
-	if Graph.configuration.Render.PrintData {
-		Graph.printData()
+	if producersLen > 0 {
+		testTypes := Graph.findLongestTestList()
+
+		for _, testType := range testTypes {
+			//newCharTestStat := charTest{
+			//	title:        testType.Name,
+			//	charType:     "bar",
+			//	labelX:       "Threads",
+			//	labelY:       "Distance",
+			//	numProviders: producersLen,
+			//	chartItems:   nil,
+			//}
+			newCharTestData := charTest{
+				title:    testType.Name,
+				charType: "bar",
+				//labelX:       "Threads",
+				//labelY:       "",
+				numProviders: producersLen,
+			}
+			newCharTestData.chartItems = []chartItem{}
+			for _, producer := range Graph.producers {
+				var testResult ResultTest
+
+				testKey := TestKey{testType.ActionType,
+					producer.TestCollectionsName,
+					producer.MySQLProducer,
+					producer.MySQLVersion,
+					testType.SelectPreWrites,
+					testType.Name,
+					testType.Dimension}
+
+				for _, tmpResult := range producer.TestsResults {
+					if tmpResult.Key == testKey {
+						testResult = tmpResult
+						break
+					}
+				}
+
+				newCharTestData.dimension = testResult.Key.Dimension
+				newCharTestData.actionType = testResult.Key.ActionType
+				newCharTestData.prePost = testResult.Key.SelectPreWrites
+
+				for idx, label := range Graph.labels {
+					newThreads := []int{}
+					newCharItem := new(chartItem)
+					newCharItem.order = idx + 1
+					newCharItem.label = label
+					newCharItem.provider = producer.MySQLProducer + producer.MySQLVersion
+					newCharItem.labelX = XAXISLABELDEFAULT
+					newCharItem.labelY = label
+					newThreads, newCharItem.data = Graph.getBarData(testResult, label)
+					newCharTestData.chartItems = append(newCharTestData.chartItems, *newCharItem)
+
+					if len(newCharTestData.threads) < len(newThreads) {
+						newCharTestData.threads = newThreads
+
+					}
+				}
+
+				log.Debugf(testResult.Key.TestName)
+
+			}
+
+			Graph.chartsData = append(Graph.chartsData, newCharTestData)
+
+		}
+
 	}
 
 	return true
 }
 
-func (Graph *GraphGenerator) printStat() {
-	//Identify how many providers
-	//loop for tests
-	//	create chartTest
-	//		set labels for axis
-	//	for each provider identify the test and collect data
-	//		setOrder
+func (Graph *GraphGenerator) printStat(testKey TestKey) {
 
 }
 
-func (Graph *GraphGenerator) printData() {
+func (Graph *GraphGenerator) printData(testKey TestKey) {
 
+}
+
+func (Graph *GraphGenerator) findLongestTestList() []TestType {
+	lenTestTypes := 0
+	outTestType := []TestType{}
+
+	for _, producer := range Graph.producers {
+		if len(producer.TestsTypes) > lenTestTypes {
+			outTestType = producer.TestsTypes
+			lenTestTypes = len(producer.TestsTypes)
+		}
+	}
+
+	return outTestType
+}
+
+func (Graph *GraphGenerator) checkForThreadInThreads(in []int, value int) bool {
+	if len(in) > 0 {
+		for _, th := range in {
+			if th == value {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+func (Graph *GraphGenerator) getBarData(testResult ResultTest, inLabel string) ([]int, []opts.BarData) {
+	values := []ResultValue{}
+	threads := []int{}
+	for key, labelValues := range testResult.Labels {
+		key = strings.TrimSpace(key)
+		if key == inLabel {
+			values = labelValues
+			break
+		}
+	}
+	items := make([]opts.BarData, 0)
+	for _, value := range values {
+		items = append(items, opts.BarData{Value: value.Value, Name: value.Label})
+		threads = append(threads, value.ThreadNumber)
+	}
+	return threads, items
 }
