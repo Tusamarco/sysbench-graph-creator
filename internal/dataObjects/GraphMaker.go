@@ -2,6 +2,7 @@ package dataObjects
 
 import (
 	"fmt"
+	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/components"
 	"github.com/go-echarts/go-echarts/v2/opts"
 	log "github.com/sirupsen/logrus"
@@ -321,7 +322,7 @@ func (Graph *GraphGenerator) getBarData(testResult ResultTest, inLabel string) (
 	threads := []int{}
 	for key, labelValues := range testResult.Labels {
 		key = strings.TrimSpace(key)
-		if key == inLabel {
+		if key == strings.TrimSpace(inLabel) {
 			values = labelValues
 			break
 		}
@@ -332,4 +333,87 @@ func (Graph *GraphGenerator) getBarData(testResult ResultTest, inLabel string) (
 		threads = append(threads, value.ThreadNumber)
 	}
 	return threads, items
+}
+
+func (Graph *GraphGenerator) BuildPage() bool {
+	// Identify if what we need to print (stats/data both)
+	var pageData *components.Page
+	//var pageStats *components.Page
+
+	if Graph.configuration.Render.PrintData {
+		_ = os.Mkdir(Graph.configuration.Render.DestinationPath, os.ModePerm)
+		fileFordata, err := os.Create(Graph.configuration.Render.DestinationPath + "data_" + global.ReplaceString(Graph.testName, " ", "") + ".html")
+		if err != nil {
+			panic(err)
+		}
+
+		pageData = components.NewPage()
+		pageData.SetLayout(components.PageFlexLayout)
+		pageData.PageTitle = Graph.testName
+
+		Graph.addDataToPage(pageData)
+
+		pageData.Render(io.MultiWriter(fileFordata))
+
+	}
+
+	return true
+}
+
+func (Graph *GraphGenerator) ActivateHTTPServer() {
+
+}
+
+func (Graph *GraphGenerator) addDataToPage(data *components.Page) {
+	//For each test
+	// set global params
+	// 	Parse labels
+	//	set axis labels based on the label
+	//		parse provider
+	//			add the data
+	for _, chartDataTest := range Graph.chartsData {
+
+		bar := charts.NewBar()
+
+		//general
+		bar.SetGlobalOptions(
+			charts.WithLegendOpts(opts.Legend{Bottom: "0%"}),
+			//charts.WithDataZoomOpts(opts.DataZoom{Type:  "slider",Start: 0,End:   50,}),
+			//charts.WithDataZoomOpts(opts.DataZoom{Type: "slider"}),
+			charts.WithTitleOpts(opts.Title{Title: chartDataTest.title, Subtitle: "Date to add"}),
+			charts.WithToolboxOpts(opts.Toolbox{
+				Right: "20%",
+				Feature: &opts.ToolBoxFeature{
+					SaveAsImage: &opts.ToolBoxFeatureSaveAsImage{
+						Type:  "jpg",
+						Title: "Save File",
+					},
+					DataView: &opts.ToolBoxFeatureDataView{
+						Title: "DataView",
+						Lang:  []string{"data view", "turn off", "refresh"},
+					},
+				}},
+			),
+		)
+
+		for _, labelReference := range Graph.labels {
+			for _, chartItemInstance := range chartDataTest.chartItems {
+				if chartItemInstance.label == labelReference {
+
+					break
+				}
+			}
+		}
+
+	}
+
+	// to assign by label
+	//bar.SetXAxis(weeks).
+	//	AddSeries("Category A", generateBarItems()).
+	//	AddSeries("Category B", generateBarItems())
+	//bar.SetGlobalOptions(
+	//	charts.WithYAxisOpts(opts.YAxis{Name: "The YAxis", NameLocation: "middle", NameGap: 50, AxisLabel: &opts.AxisLabel{Rotate: 0.00, Align: "right"}}),
+	//	charts.WithXAxisOpts(opts.XAxis{Name: "Threads", NameLocation: "middle", SplitLine: &opts.SplitLine{Show: opts.Bool(true)}}),
+	//)
+
 }
