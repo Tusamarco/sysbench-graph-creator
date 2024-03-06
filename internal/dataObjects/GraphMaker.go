@@ -56,8 +56,9 @@ type GraphGenerator struct {
 	producers     []Producer
 	testName      string
 	chartsData    []charTest
-	chartsStats   map[string]charTest
+	chartsStats   []charTest
 	labels        []string
+	statLabels    []string
 }
 
 func (Graph *GraphGenerator) checkConfig() bool {
@@ -90,8 +91,9 @@ func (Graph *GraphGenerator) Init(inConfig global.Configuration, inProducers []P
 	Graph.configuration = inConfig
 	Graph.checkConfig()
 	Graph.chartsData = []charTest{}
-	Graph.chartsStats = make(map[string]charTest)
+	Graph.chartsStats = []charTest{}
 	Graph.labels = strings.Split(inConfig.Render.Labels, ",")
+	Graph.statLabels = strings.Split(inConfig.Render.StatsLabels, ",")
 
 }
 
@@ -215,19 +217,14 @@ func (Graph *GraphGenerator) RenderReults() bool {
 		testTypes := Graph.findLongestTestList()
 
 		for _, testType := range testTypes {
-			//newCharTestStat := charTest{
-			//	title:        testType.Name,
-			//	charType:     "bar",
-			//	labelX:       "Threads",
-			//	labelY:       "Distance",
-			//	numProviders: producersLen,
-			//	chartItems:   nil,
-			//}
+			newCharTestStat := charTest{
+				title:        testType.Name,
+				charType:     "bar",
+				numProviders: producersLen,
+			}
 			newCharTestData := charTest{
-				title:    testType.Name,
-				charType: "bar",
-				//labelX:       "Threads",
-				//labelY:       "",
+				title:        testType.Name,
+				charType:     "bar",
 				numProviders: producersLen,
 			}
 			newCharTestData.chartItems = []chartItem{}
@@ -249,12 +246,20 @@ func (Graph *GraphGenerator) RenderReults() bool {
 					}
 				}
 
+				//filling data object
 				newCharTestData.dimension = testResult.Key.Dimension
 				newCharTestData.actionType = testResult.Key.ActionType
 				newCharTestData.prePost = testResult.Key.SelectPreWrites
 
+				//filling stats object
+				newCharTestStat.dimension = testResult.Key.Dimension
+				newCharTestStat.actionType = testResult.Key.ActionType
+				newCharTestStat.prePost = testResult.Key.SelectPreWrites
+
 				for idx, label := range Graph.labels {
 					newThreads := []int{}
+
+					//Filling data
 					newCharItem := new(chartItem)
 					newCharItem.order = idx + 1
 					newCharItem.label = label
@@ -268,6 +273,22 @@ func (Graph *GraphGenerator) RenderReults() bool {
 						newCharTestData.threads = newThreads
 
 					}
+
+					//filling stats
+					newCharStatsItem := new(chartItem)
+					newCharStatsItem.order = idx + 1
+					newCharStatsItem.label = label
+					newCharStatsItem.provider = producer.MySQLProducer + producer.MySQLVersion
+					newCharStatsItem.labelX = XAXISLABELDEFAULT
+					newCharStatsItem.labelY = label
+					newThreads, newCharStatsItem.data = Graph.getBarStats(testResult, label)
+					newCharTestStat.chartItems = append(newCharTestStat.chartItems, *newCharStatsItem)
+
+					if len(newCharTestStat.threads) < len(newThreads) {
+						newCharTestStat.threads = newThreads
+
+					}
+
 				}
 
 				log.Debugf(testResult.Key.TestName)
@@ -275,7 +296,7 @@ func (Graph *GraphGenerator) RenderReults() bool {
 			}
 
 			Graph.chartsData = append(Graph.chartsData, newCharTestData)
-
+			Graph.chartsStats = append(Graph.chartsStats, newCharTestStat)
 		}
 
 	}
@@ -338,7 +359,7 @@ func (Graph *GraphGenerator) getBarData(testResult ResultTest, inLabel string) (
 func (Graph *GraphGenerator) BuildPage() bool {
 	// Identify if what we need to print (stats/data both)
 	var pageData *components.Page
-	//var pageStats *components.Page
+	var pageStats *components.Page
 
 	if Graph.configuration.Render.PrintData {
 		_ = os.Mkdir(Graph.configuration.Render.DestinationPath, os.ModePerm)
@@ -357,6 +378,23 @@ func (Graph *GraphGenerator) BuildPage() bool {
 
 	}
 
+	if Graph.configuration.Render.PrintStats {
+		_ = os.Mkdir(Graph.configuration.Render.DestinationPath, os.ModePerm)
+		fileForStats, err := os.Create(Graph.configuration.Render.DestinationPath + "stats_" + global.ReplaceString(Graph.testName, " ", "") + ".html")
+		if err != nil {
+			panic(err)
+		}
+
+		pageStats = components.NewPage()
+		//pageStats.SetLayout(components.PageFlexLayout)
+		pageStats.PageTitle = Graph.testName + " STATISTICS"
+
+		Graph.addStatsToPage(pageStats)
+
+		pageStats.Render(io.MultiWriter(fileForStats))
+
+	}
+
 	return true
 }
 
@@ -372,61 +410,128 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 	//		parse provider
 	//			add the data
 	for _, chartDataTest := range Graph.chartsData {
-		for _, labelReference := range Graph.labels {
+		if !strings.Contains(strings.ToLower(chartDataTest.title), "warmup") {
+			for _, labelReference := range Graph.labels {
 
-			bar := charts.NewBar()
+				bar := charts.NewBar()
 
-			titleFull := global.ReplaceString(chartDataTest.title, "_", " ") + " " + chartDataTest.dimension
-			if chartDataTest.prePost == 0 {
-				titleFull += " Pre Writes"
-			} else {
-				titleFull += " Post Writes"
-			}
-			//general
-
-			bar.SetGlobalOptions(
-				charts.WithXAxisOpts(opts.XAxis{Name: "Threads", NameGap: 20, NameLocation: "middle", SplitLine: &opts.SplitLine{Show: opts.Bool(true)}}),
-				charts.WithColorsOpts(opts.Colors{"blue", "orange"}),
-				charts.WithLegendOpts(opts.Legend{Bottom: "0%"}),
-				//charts.WithDataZoomOpts(opts.DataZoom{Type:  "slider",Start: 0,End:   50,}),
-				//charts.WithDataZoomOpts(opts.DataZoom{Type: "slider"}),
-				//charts.WithTitleOpts(opts.Title{Title: chartDataTest.title}),
-				charts.WithToolboxOpts(opts.Toolbox{
-					Right: "20%",
-					Feature: &opts.ToolBoxFeature{
-						SaveAsImage: &opts.ToolBoxFeatureSaveAsImage{
-							Type:  "jpg",
-							Title: "Save File",
-						},
-						DataView: &opts.ToolBoxFeatureDataView{
-							Title: "DataView",
-							Lang:  []string{"data view", "turn off", "refresh"},
-						},
-					}},
-				),
-			)
-			bar.SetGlobalOptions(charts.WithTitleOpts(opts.Title{Title: titleFull, Subtitle: labelReference}))
-			bar.SetGlobalOptions(
-				charts.WithYAxisOpts(opts.YAxis{Name: labelReference, NameLocation: "middle", NameGap: 60, AxisLabel: &opts.AxisLabel{Rotate: 0.00, Align: "right"}}),
-			)
-			for _, chartItemInstance := range chartDataTest.chartItems {
-				if chartItemInstance.label == labelReference {
-
-					bar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.provider, chartItemInstance.data)
+				titleFull := global.ReplaceString(chartDataTest.title, "_", " ") + " " + chartDataTest.dimension
+				if chartDataTest.prePost == 0 {
+					titleFull += " Pre Writes"
+				} else {
+					titleFull += " Post Writes"
 				}
+				//general
+
+				bar.SetGlobalOptions(
+					charts.WithXAxisOpts(opts.XAxis{Name: "Threads", NameGap: 20, NameLocation: "middle", SplitLine: &opts.SplitLine{Show: opts.Bool(true)}}),
+					//charts.WithColorsOpts(opts.Colors{"blue", "orange"}),
+					charts.WithLegendOpts(opts.Legend{Bottom: "0%"}),
+					charts.WithToolboxOpts(opts.Toolbox{
+						Right: "20%",
+						Feature: &opts.ToolBoxFeature{
+							SaveAsImage: &opts.ToolBoxFeatureSaveAsImage{
+								Type:  "jpg",
+								Title: "Save File",
+							},
+							DataView: &opts.ToolBoxFeatureDataView{
+								Title: "DataView",
+								Lang:  []string{"data view", "turn off", "refresh"},
+							},
+						}},
+					),
+					charts.WithTitleOpts(opts.Title{Title: titleFull, Subtitle: labelReference}),
+					charts.WithYAxisOpts(opts.YAxis{Name: labelReference, NameLocation: "middle", NameGap: 60, AxisLabel: &opts.AxisLabel{Rotate: 0.00, Align: "right"}}),
+				)
+				for _, chartItemInstance := range chartDataTest.chartItems {
+					if chartItemInstance.label == labelReference {
+						//log.Debugf("Len items data %d  test %s label %s", len(chartItemInstance.data), chartDataTest.title, chartItemInstance.label)
+						bar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.provider, chartItemInstance.data)
+					}
+				}
+
+				page.AddCharts(bar)
+
 			}
-			page.AddCharts(bar)
 		}
+		//log.Debugf("Len items %d", len(chartDataTest.chartItems))
 
 	}
 
-	// to assign by label
-	//bar.SetXAxis(weeks).
-	//	AddSeries("Category A", generateBarItems()).
-	//	AddSeries("Category B", generateBarItems())
-	//bar.SetGlobalOptions(
-	//	charts.WithYAxisOpts(opts.YAxis{Name: "The YAxis", NameLocation: "middle", NameGap: 50, AxisLabel: &opts.AxisLabel{Rotate: 0.00, Align: "right"}}),
-	//	charts.WithXAxisOpts(opts.XAxis{Name: "Threads", NameLocation: "middle", SplitLine: &opts.SplitLine{Show: opts.Bool(true)}}),
-	//)
+}
 
+func (Graph *GraphGenerator) addStatsToPage(page *components.Page) {
+	//For each test
+	// set global params
+	// 	Parse labels
+	//	set axis labels based on the label
+	//		parse provider
+	//			add the data
+	for _, chartStatTest := range Graph.chartsStats {
+		if !strings.Contains(strings.ToLower(chartStatTest.title), "warmup") {
+			for _, labelReference := range Graph.statLabels {
+
+				bar := charts.NewBar()
+
+				titleFull := global.ReplaceString(chartStatTest.title, "_", " ") + " " + chartStatTest.dimension
+				if chartStatTest.prePost == 0 {
+					titleFull += " Pre Writes"
+				} else {
+					titleFull += " Post Writes"
+				}
+				//general
+
+				bar.SetGlobalOptions(
+					charts.WithXAxisOpts(opts.XAxis{Name: "Threads", NameGap: 20, NameLocation: "middle", SplitLine: &opts.SplitLine{Show: opts.Bool(true)}}),
+					charts.WithYAxisOpts(opts.YAxis{Name: "Variation %", NameLocation: "middle", NameGap: 60, AxisLabel: &opts.AxisLabel{Rotate: 0.00, Align: "right"}}),
+					//charts.WithColorsOpts(opts.Colors{"blue", "orange"}),
+					charts.WithLegendOpts(opts.Legend{Bottom: "0%"}),
+					//charts.WithDataZoomOpts(opts.DataZoom{Type:  "slider",Start: 0,End:   50,}),
+					//charts.WithDataZoomOpts(opts.DataZoom{Type: "slider"}),
+					//charts.WithTitleOpts(opts.Title{Title: chartDataTest.title}),
+					charts.WithToolboxOpts(opts.Toolbox{
+						Right: "20%",
+						Feature: &opts.ToolBoxFeature{
+							SaveAsImage: &opts.ToolBoxFeatureSaveAsImage{
+								Type:  "jpg",
+								Title: "Save File",
+							},
+							DataView: &opts.ToolBoxFeatureDataView{
+								Title: "DataView",
+								Lang:  []string{"data view", "turn off", "refresh"},
+							},
+						}},
+					),
+					charts.WithTitleOpts(opts.Title{Title: titleFull, Subtitle: labelReference}),
+				)
+
+				for _, chartItemInstance := range chartStatTest.chartItems {
+					if chartItemInstance.label == labelReference {
+						bar.SetXAxis(chartStatTest.threads).AddSeries(chartItemInstance.provider, chartItemInstance.data)
+
+					}
+				}
+				page.AddCharts(bar)
+			}
+		}
+
+	}
+}
+
+func (Graph *GraphGenerator) getBarStats(testResult ResultTest, inLabel string) ([]int, []opts.BarData) {
+	values := []ResultValue{}
+	threads := []int{}
+	for key, labelValues := range testResult.Labels {
+		key = strings.TrimSpace(key)
+		if key == strings.TrimSpace(inLabel) {
+			values = labelValues
+			break
+		}
+	}
+	items := make([]opts.BarData, 0)
+	for _, value := range values {
+		items = append(items, opts.BarData{Value: value.Lerror, Name: value.Label})
+		threads = append(threads, value.ThreadNumber)
+	}
+	return threads, items
 }
