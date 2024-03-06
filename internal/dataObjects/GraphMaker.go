@@ -364,7 +364,7 @@ func (Graph *GraphGenerator) ActivateHTTPServer() {
 
 }
 
-func (Graph *GraphGenerator) addDataToPage(data *components.Page) {
+func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 	//For each test
 	// set global params
 	// 	Parse labels
@@ -372,37 +372,50 @@ func (Graph *GraphGenerator) addDataToPage(data *components.Page) {
 	//		parse provider
 	//			add the data
 	for _, chartDataTest := range Graph.chartsData {
-
-		bar := charts.NewBar()
-
-		//general
-		bar.SetGlobalOptions(
-			charts.WithLegendOpts(opts.Legend{Bottom: "0%"}),
-			//charts.WithDataZoomOpts(opts.DataZoom{Type:  "slider",Start: 0,End:   50,}),
-			//charts.WithDataZoomOpts(opts.DataZoom{Type: "slider"}),
-			charts.WithTitleOpts(opts.Title{Title: chartDataTest.title, Subtitle: "Date to add"}),
-			charts.WithToolboxOpts(opts.Toolbox{
-				Right: "20%",
-				Feature: &opts.ToolBoxFeature{
-					SaveAsImage: &opts.ToolBoxFeatureSaveAsImage{
-						Type:  "jpg",
-						Title: "Save File",
-					},
-					DataView: &opts.ToolBoxFeatureDataView{
-						Title: "DataView",
-						Lang:  []string{"data view", "turn off", "refresh"},
-					},
-				}},
-			),
-		)
-
 		for _, labelReference := range Graph.labels {
+
+			bar := charts.NewBar()
+
+			titleFull := global.ReplaceString(chartDataTest.title, "_", " ") + " " + chartDataTest.dimension
+			if chartDataTest.prePost == 0 {
+				titleFull += " Pre Writes"
+			} else {
+				titleFull += " Post Writes"
+			}
+			//general
+
+			bar.SetGlobalOptions(
+				charts.WithXAxisOpts(opts.XAxis{Name: "Threads", NameGap: 20, NameLocation: "middle", SplitLine: &opts.SplitLine{Show: opts.Bool(true)}}),
+				charts.WithColorsOpts(opts.Colors{"blue", "orange"}),
+				charts.WithLegendOpts(opts.Legend{Bottom: "0%"}),
+				//charts.WithDataZoomOpts(opts.DataZoom{Type:  "slider",Start: 0,End:   50,}),
+				//charts.WithDataZoomOpts(opts.DataZoom{Type: "slider"}),
+				//charts.WithTitleOpts(opts.Title{Title: chartDataTest.title}),
+				charts.WithToolboxOpts(opts.Toolbox{
+					Right: "20%",
+					Feature: &opts.ToolBoxFeature{
+						SaveAsImage: &opts.ToolBoxFeatureSaveAsImage{
+							Type:  "jpg",
+							Title: "Save File",
+						},
+						DataView: &opts.ToolBoxFeatureDataView{
+							Title: "DataView",
+							Lang:  []string{"data view", "turn off", "refresh"},
+						},
+					}},
+				),
+			)
+			bar.SetGlobalOptions(charts.WithTitleOpts(opts.Title{Title: titleFull, Subtitle: labelReference}))
+			bar.SetGlobalOptions(
+				charts.WithYAxisOpts(opts.YAxis{Name: labelReference, NameLocation: "middle", NameGap: 60, AxisLabel: &opts.AxisLabel{Rotate: 0.00, Align: "right"}}),
+			)
 			for _, chartItemInstance := range chartDataTest.chartItems {
 				if chartItemInstance.label == labelReference {
 
-					break
+					bar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.provider, chartItemInstance.data)
 				}
 			}
+			page.AddCharts(bar)
 		}
 
 	}
