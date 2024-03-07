@@ -39,6 +39,9 @@ type charTest struct {
 	dimension    string
 	actionType   int
 	threads      []int
+	dataBetter   []int
+	isBetter     bool
+	totalPoints  float64
 }
 
 const (
@@ -300,16 +303,31 @@ func (Graph *GraphGenerator) RenderReults() bool {
 		}
 
 	}
-
+	//calculate summary results
+	Graph.calculateSummary()
 	return true
 }
 
-func (Graph *GraphGenerator) printStat(testKey TestKey) {
+func (Graph *GraphGenerator) calculateSummary() bool {
+	for _, chartDataTest := range Graph.chartsData {
+		var evalLabel string
+		if chartDataTest.actionType == 0 {
+			evalLabel = Graph.configuration.Render.ReadSummaryLabel
+		} else {
+			evalLabel = Graph.configuration.Render.WriteSummaryLabel
+		}
+		if !strings.Contains(strings.ToLower(chartDataTest.title), "warmup") {
+			for _, item := range chartDataTest.chartItems {
 
-}
+				if item.label == evalLabel {
 
-func (Graph *GraphGenerator) printData(testKey TestKey) {
+				}
 
+			}
+		}
+	}
+
+	return true
 }
 
 func (Graph *GraphGenerator) findLongestTestList() []TestType {
@@ -386,7 +404,7 @@ func (Graph *GraphGenerator) BuildPage() bool {
 		}
 
 		pageStats = components.NewPage()
-		//pageStats.SetLayout(components.PageFlexLayout)
+		pageStats.SetLayout(components.PageFlexLayout)
 		pageStats.PageTitle = Graph.testName + " STATISTICS"
 
 		Graph.addStatsToPage(pageStats)
