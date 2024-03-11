@@ -202,6 +202,7 @@ func (Graph *GraphGenerator) Test3() {
 
 func (Graph *GraphGenerator) Test4() {
 	barSetToolbox := barSetToolbox()
+
 	MakeChartSnapshot(barSetToolbox.RenderContent(), "my-bar-title.png")
 }
 
@@ -245,56 +246,57 @@ func (Graph *GraphGenerator) RenderReults() bool {
 				for _, tmpResult := range producer.TestsResults {
 					if tmpResult.Key == testKey {
 						testResult = tmpResult
+
+						//filling data object
+						newCharTestData.dimension = testResult.Key.Dimension
+						newCharTestData.actionType = testResult.Key.ActionType
+						newCharTestData.prePost = testResult.Key.SelectPreWrites
+
+						//filling stats object
+						newCharTestStat.dimension = testResult.Key.Dimension
+						newCharTestStat.actionType = testResult.Key.ActionType
+						newCharTestStat.prePost = testResult.Key.SelectPreWrites
+
+						for idx, label := range Graph.labels {
+							newThreads := []int{}
+
+							//Filling data
+							newCharItem := new(chartItem)
+							newCharItem.order = idx + 1
+							newCharItem.label = label
+							newCharItem.provider = producer.MySQLProducer + producer.MySQLVersion + producer.TestCollectionsName
+							newCharItem.labelX = XAXISLABELDEFAULT
+							newCharItem.labelY = label
+							newThreads, newCharItem.data = Graph.getBarData(testResult, label)
+							newCharTestData.chartItems = append(newCharTestData.chartItems, *newCharItem)
+
+							if len(newCharTestData.threads) < len(newThreads) {
+								newCharTestData.threads = newThreads
+
+							}
+
+							//filling stats
+							newCharStatsItem := new(chartItem)
+							newCharStatsItem.order = idx + 1
+							newCharStatsItem.label = label
+							newCharStatsItem.provider = producer.MySQLProducer + producer.MySQLVersion + producer.TestCollectionsName
+							newCharStatsItem.labelX = XAXISLABELDEFAULT
+							newCharStatsItem.labelY = label
+							newThreads, newCharStatsItem.data = Graph.getBarStats(testResult, label)
+							newCharTestStat.chartItems = append(newCharTestStat.chartItems, *newCharStatsItem)
+
+							if len(newCharTestStat.threads) < len(newThreads) {
+								newCharTestStat.threads = newThreads
+
+							}
+
+						}
+
+						log.Debugf(testResult.Key.TestName)
+
 						break
 					}
 				}
-
-				//filling data object
-				newCharTestData.dimension = testResult.Key.Dimension
-				newCharTestData.actionType = testResult.Key.ActionType
-				newCharTestData.prePost = testResult.Key.SelectPreWrites
-
-				//filling stats object
-				newCharTestStat.dimension = testResult.Key.Dimension
-				newCharTestStat.actionType = testResult.Key.ActionType
-				newCharTestStat.prePost = testResult.Key.SelectPreWrites
-
-				for idx, label := range Graph.labels {
-					newThreads := []int{}
-
-					//Filling data
-					newCharItem := new(chartItem)
-					newCharItem.order = idx + 1
-					newCharItem.label = label
-					newCharItem.provider = producer.MySQLProducer + producer.MySQLVersion + producer.TestCollectionsName
-					newCharItem.labelX = XAXISLABELDEFAULT
-					newCharItem.labelY = label
-					newThreads, newCharItem.data = Graph.getBarData(testResult, label)
-					newCharTestData.chartItems = append(newCharTestData.chartItems, *newCharItem)
-
-					if len(newCharTestData.threads) < len(newThreads) {
-						newCharTestData.threads = newThreads
-
-					}
-
-					//filling stats
-					newCharStatsItem := new(chartItem)
-					newCharStatsItem.order = idx + 1
-					newCharStatsItem.label = label
-					newCharStatsItem.provider = producer.MySQLProducer + producer.MySQLVersion + producer.TestCollectionsName
-					newCharStatsItem.labelX = XAXISLABELDEFAULT
-					newCharStatsItem.labelY = label
-					newThreads, newCharStatsItem.data = Graph.getBarStats(testResult, label)
-					newCharTestStat.chartItems = append(newCharTestStat.chartItems, *newCharStatsItem)
-
-					if len(newCharTestStat.threads) < len(newThreads) {
-						newCharTestStat.threads = newThreads
-
-					}
-
-				}
-
-				log.Debugf(testResult.Key.TestName)
 
 			}
 
@@ -331,17 +333,42 @@ func (Graph *GraphGenerator) calculateSummary() bool {
 }
 
 func (Graph *GraphGenerator) findLongestTestList() []TestType {
-	lenTestTypes := 0
+	//lenTestTypes := 0
 	outTestType := []TestType{}
 
 	for _, producer := range Graph.producers {
-		if len(producer.TestsTypes) > lenTestTypes {
-			outTestType = producer.TestsTypes
-			lenTestTypes = len(producer.TestsTypes)
-		}
+		outTestType = Graph.mergeTestList(outTestType, producer.TestsTypes)
+
+		//if len(producer.TestsTypes) > lenTestTypes {
+		//	outTestType = producer.TestsTypes
+		//	lenTestTypes = len(producer.TestsTypes)
+		//}
 	}
 
 	return outTestType
+}
+
+func (Graph *GraphGenerator) mergeTestList(in []TestType, toMerge []TestType) []TestType {
+
+	for _, elementToMerge := range toMerge {
+		merge := true
+		for _, elementToTest := range in {
+			if
+			//elementToTest.TestCollectionName == elementToMerge.TestCollectionName &&
+			elementToTest.Name == elementToMerge.Name &&
+				elementToTest.Dimension == elementToMerge.Dimension &&
+				elementToTest.SelectPreWrites == elementToMerge.SelectPreWrites &&
+				elementToTest.ActionType == elementToMerge.ActionType {
+				merge = false
+			}
+		}
+		if merge {
+			in = append(in, elementToMerge)
+		}
+
+	}
+
+	return in
 }
 
 func (Graph *GraphGenerator) checkForThreadInThreads(in []int, value int) bool {

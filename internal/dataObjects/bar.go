@@ -86,6 +86,7 @@ func barSetToolbox() *charts.Bar {
 		//	},
 
 		charts.WithTitleOpts(opts.Title{Title: "toolbox options", Subtitle: "subtitle yee"}),
+		charts.WithAnimation(false),
 		//charts.WithTitleOpts(opts.Title{Title: "toolbox options"}),
 		charts.WithToolboxOpts(opts.Toolbox{
 			Right: "20%",

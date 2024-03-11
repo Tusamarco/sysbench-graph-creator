@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	READ  = 0
-	WRITE = 1
+	READ           = 0
+	WRITE          = 1
+	READ_AND_WRITE = 10
 
 	PREWRITE  = 0
 	POSTWRITE = 1
@@ -26,7 +27,7 @@ func DIMENSIONS() []string {
 }
 
 func ACTIONTYPES() []int {
-	return []int{READ, WRITE}
+	return []int{READ, WRITE, READ_AND_WRITE}
 }
 func PREPOSTWRITE() []int {
 	return []int{PREWRITE, POSTWRITE}
@@ -132,6 +133,8 @@ func getStringAction(code int) (string, error) {
 		return "READ", nil
 	case 1:
 		return "WRITE", nil
+	case 10:
+		return "read/write", nil
 
 	}
 	return "", fmt.Errorf("Invalid code passed %d", code)
@@ -142,6 +145,8 @@ func getCodeAction(action string) (int, error) {
 		return 0, nil
 	case "write":
 		return 1, nil
+	case "read/write":
+		return 10, nil
 
 	}
 	return 10, fmt.Errorf("Invalid action passed %s", action)

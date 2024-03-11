@@ -489,7 +489,7 @@ func Average(xs []float64) float64 {
 func Variance(in []float64) float64 {
 	mean := Average(in)
 	standardDev := StandardDeviation(in)
-	total := (standardDev / mean) * 100
+	total := (standardDev * 100) / mean
 
 	return total
 }
