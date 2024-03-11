@@ -1,6 +1,7 @@
 #v.0.1.0
 [parser]
-sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/not_processed/sysbench"
+sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/not_processed/sysbench/" #MY-PS-8034-BASE
+#sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/not_processed/sysbench/MY-PS-8034-NO-AHI"
 
 
 
@@ -17,6 +18,15 @@ statslabels="writes/s,reads/s,latencyPct95(μs)"
 readSummaryLabel="reads/s"
 writeSummaryLabel="writes/s"
 #labels="TotalTime,RunningThreads,totalEvents,Events/s,Tot Operations,operations/s,tot reads,reads/s,Tot writes,writes/s,oterOps/s,latencyPct95(μs) ,Tot errors,errors/s,Tot reconnects,reconnects/s,Latency(ms) min, Latency(ms) max, Latency(ms) avg, Latency(ms) sum"
+showReads=true
+showWrites=true
+showPreWrite=true
+shoPostWrite=true
+filterTestBy=""
+chartHeight=400
+chartWidth=800
+printCharts=false
+printChartsFormat="jpeg"
 
 [global]
 testName="Comparing PS VS MySQL"

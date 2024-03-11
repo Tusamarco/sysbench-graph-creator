@@ -472,17 +472,38 @@ func Average(xs []float64) float64 {
 	}
 	return total / float64(len(xs))
 }
-func StandardDevitation(in []float64) float64 {
+
+//func StandardDeviation(in []float64) float64 {
+//	mean := Average(in)
+//	result := 0.0
+//
+//	for _, element := range in {
+//		result += math.Pow(element-mean, 2)
+//	}
+//	result = result / float64(len(in))
+//	result = math.Sqrt(result)
+//	return result
+//
+//}
+
+func Variance(in []float64) float64 {
 	mean := Average(in)
-	result := 0.0
+	standardDev := StandardDeviation(in)
+	total := (standardDev / mean) * 100
 
-	for _, element := range in {
-		result += math.Pow(element-mean, 2)
+	return total
+}
+
+func StandardDeviation(num []float64) float64 {
+	var mean, sd float64
+
+	mean = Average(num)
+	//fmt.Println("The mean of above array is:", mean)
+	for _, j := range num {
+		sd += math.Pow(j-mean, 2)
 	}
-	result = result / float64(len(in))
-	result = math.Sqrt(result)
-	return result
-
+	sd = math.Sqrt(sd / float64(len(num)))
+	return sd
 }
 
 func AppendArrayToArray(receiver []interface{}, giver []interface{}) []interface{} {

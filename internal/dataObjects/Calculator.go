@@ -205,15 +205,16 @@ func (calcIMpl *Calculator) transformLablesForMultipleExecutions(test []Test) (b
 	return true, labels
 }
 
-// here we do the sdt calculation and gerror
+// here we do the sdt calculation and variance
 func evaluateMultipleExecutionsValues(arValues []float64, label string, threadId int) ResultValue {
 
 	avgValue := global.Average(arValues)
 	avgValue, _ = stats.Round(avgValue, 2)
 	//stdValue, _ := stats.StdDevP(arValues)
-	stdValue := global.StandardDevitation(arValues)
+	stdValue := global.StandardDeviation(arValues)
 	stdValue, _ = stats.Round(stdValue, 2)
-	errorV := stdValue / avgValue * 100
+	//errorV := global.Variance(arValues)
+	errorV := global.Variance(arValues)
 	if math.IsNaN(errorV) {
 		errorV = 0
 	}
@@ -255,14 +256,29 @@ func (calcIMpl *Calculator) GroupByProducers() []Producer {
 	for key, _ := range calcIMpl.TestResults {
 		present := false
 		for _, producer := range producersAr {
-			if producer.MySQLProducer == key.MySQLProducer && producer.MySQLVersion == key.MySQLVersion {
+			if producer.MySQLProducer == key.MySQLProducer &&
+				producer.MySQLVersion == key.MySQLVersion &&
+				producer.TestCollectionsName == key.TestCollectionName {
 				present = true
 			}
 		}
 		if !present {
-			newProducer := Producer{key.MySQLProducer, key.MySQLVersion, []ResultTest{}, []TestType{}, "", 0.0, 0.0, 0, 0, 0, 0}
-			log.Debugf("Adding producer %v", newProducer)
-			producersAr = append(producersAr, newProducer)
+			if key.MySQLProducer != "" {
+
+				newProducer := Producer{key.MySQLProducer,
+					key.MySQLVersion,
+					[]ResultTest{},
+					[]TestType{},
+					key.TestCollectionName,
+					0.0,
+					0.0,
+					0,
+					0,
+					0,
+					0}
+				log.Debugf("Adding producer %v", newProducer)
+				producersAr = append(producersAr, newProducer)
+			}
 		}
 
 	}
@@ -282,8 +298,12 @@ func (calcIMpl *Calculator) assignTestsResultsToProducers(producersAr []Producer
 					tmpArrayTypes = []TestType{}
 					for key, _ := range calcIMpl.TestResults {
 
-						if key.MySQLProducer == producer.MySQLProducer && key.MySQLVersion == producer.MySQLVersion &&
-							key.Dimension == dim && key.ActionType == AType && key.SelectPreWrites == prePost {
+						if key.MySQLProducer == producer.MySQLProducer &&
+							key.MySQLVersion == producer.MySQLVersion &&
+							key.TestCollectionName == producer.TestCollectionsName &&
+							key.Dimension == dim &&
+							key.ActionType == AType &&
+							key.SelectPreWrites == prePost {
 
 							present := false
 							for _, testType := range producer.TestsTypes {
@@ -366,7 +386,7 @@ func (calcIMpl *Calculator) getLabelSTDGerror(labels map[string][]ResultValue) (
 		}
 
 		stdValue, _ = stats.Round(stdValue, 2)
-		gerrValue := global.Average(valuesGerrAr)
+		gerrValue := global.Variance(valuesGerrAr)
 		log.Debugf("Label: %s  STD: %.4f Dist(pct): %.4f", label, stdValue, gerrValue)
 
 		resulTestSTDAr = append(resulTestSTDAr, stdValue)
@@ -409,21 +429,21 @@ func (calcIMpl *Calculator) calculateProducerSTDGerror(ar []Producer) []Producer
 			stdValuePre = global.Average(valuesSTDArPre)
 			stdValuePre, _ = stats.Round(stdValuePre, 2)
 		}
-		gerrValuePre := global.Average(valuesGerrArPre)
+		gerrValuePre := global.Variance(valuesGerrArPre)
 
 		stdValuePost := 0.0
 		if len(valuesSTDArPost) > 1 {
 			stdValuePost = global.Average(valuesSTDArPost)
 			stdValuePost, _ = stats.Round(stdValuePost, 2)
 		}
-		gerrValuePost := global.Average(valuesGerrArPost)
+		gerrValuePost := global.Variance(valuesGerrArPost)
 
 		stdValueWrite := 0.0
 		if len(valuesSTDArWrite) > 1 {
 			stdValueWrite = global.Average(valuesSTDArWrite)
 			stdValueWrite, _ = stats.Round(stdValueWrite, 2)
 		}
-		gerrValueWrite := global.Average(valuesGerrArWrite)
+		gerrValueWrite := global.Variance(valuesGerrArWrite)
 
 		producer.STDReadPre = stdValuePre
 		producer.GerrorReadPre = gerrValuePre

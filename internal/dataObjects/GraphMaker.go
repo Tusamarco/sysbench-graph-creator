@@ -266,7 +266,7 @@ func (Graph *GraphGenerator) RenderReults() bool {
 					newCharItem := new(chartItem)
 					newCharItem.order = idx + 1
 					newCharItem.label = label
-					newCharItem.provider = producer.MySQLProducer + producer.MySQLVersion
+					newCharItem.provider = producer.MySQLProducer + producer.MySQLVersion + producer.TestCollectionsName
 					newCharItem.labelX = XAXISLABELDEFAULT
 					newCharItem.labelY = label
 					newThreads, newCharItem.data = Graph.getBarData(testResult, label)
@@ -281,7 +281,7 @@ func (Graph *GraphGenerator) RenderReults() bool {
 					newCharStatsItem := new(chartItem)
 					newCharStatsItem.order = idx + 1
 					newCharStatsItem.label = label
-					newCharStatsItem.provider = producer.MySQLProducer + producer.MySQLVersion
+					newCharStatsItem.provider = producer.MySQLProducer + producer.MySQLVersion + producer.TestCollectionsName
 					newCharStatsItem.labelX = XAXISLABELDEFAULT
 					newCharStatsItem.labelY = label
 					newThreads, newCharStatsItem.data = Graph.getBarStats(testResult, label)
@@ -442,9 +442,15 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 				//general
 
 				bar.SetGlobalOptions(
+					charts.WithInitializationOpts(opts.Initialization{
+						Width:  "800px",
+						Height: "400px",
+					}),
+					charts.WithLegendOpts(opts.Legend{Width: "90%", Height: "300", Bottom: "-1%", Type: "scroll"}),
+					//charts.WithLegendOpts(opts.Legend{Width: "90%", Height: "300", Bottom: "-1%"}),
 					charts.WithXAxisOpts(opts.XAxis{Name: "Threads", NameGap: 20, NameLocation: "middle", SplitLine: &opts.SplitLine{Show: opts.Bool(true)}}),
 					//charts.WithColorsOpts(opts.Colors{"blue", "orange"}),
-					charts.WithLegendOpts(opts.Legend{Bottom: "0%"}),
+					//charts.WithLegendOpts(opts.Legend{Bottom: "0%"}),
 					charts.WithToolboxOpts(opts.Toolbox{
 						Right: "20%",
 						Feature: &opts.ToolBoxFeature{
@@ -500,10 +506,15 @@ func (Graph *GraphGenerator) addStatsToPage(page *components.Page) {
 				//general
 
 				bar.SetGlobalOptions(
+					charts.WithInitializationOpts(opts.Initialization{
+						Width:  "800px",
+						Height: "400px",
+					}),
+					charts.WithLegendOpts(opts.Legend{Width: "90%", Height: "300", Bottom: "-1%", Type: "scroll"}),
+					//charts.WithLegendOpts(opts.Legend{Width: "90%", Height: "300", Bottom: "-1%"}),
 					charts.WithXAxisOpts(opts.XAxis{Name: "Threads", NameGap: 20, NameLocation: "middle", SplitLine: &opts.SplitLine{Show: opts.Bool(true)}}),
 					charts.WithYAxisOpts(opts.YAxis{Name: "Variation %", NameLocation: "middle", NameGap: 60, AxisLabel: &opts.AxisLabel{Rotate: 0.00, Align: "right"}}),
 					//charts.WithColorsOpts(opts.Colors{"blue", "orange"}),
-					charts.WithLegendOpts(opts.Legend{Bottom: "0%"}),
 					//charts.WithDataZoomOpts(opts.DataZoom{Type:  "slider",Start: 0,End:   50,}),
 					//charts.WithDataZoomOpts(opts.DataZoom{Type: "slider"}),
 					//charts.WithTitleOpts(opts.Title{Title: chartDataTest.title}),

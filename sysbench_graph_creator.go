@@ -93,7 +93,7 @@ func main() {
 	log.Infof("# of producers %d", len(producersAr))
 	log.Infof("Producers STD and Distance")
 	for _, producer := range producersAr {
-		log.Infof("Producer: %s; %s: ", producer.MySQLProducer, producer.MySQLVersion)
+		log.Infof("Producer: %s: %s: test name: %s", producer.MySQLProducer, producer.MySQLVersion, producer.TestCollectionsName)
 		log.Infof("		READS PRE WRITES  STD: %.4f Dist(pct): %.4f", producer.STDReadPre, producer.GerrorReadPre)
 		log.Infof("		READS POST WRITES  STD: %.4f Dist(pct): %.4f", producer.STDReadPost, producer.GerrorReadPost)
 		log.Infof("		WRITES  STD: %.4f Dist(pct): %.4f", producer.STDRWrite, producer.GerrorWrite)
