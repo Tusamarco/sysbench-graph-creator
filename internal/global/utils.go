@@ -486,11 +486,13 @@ func Average(xs []float64) float64 {
 //
 //}
 
-func Variance(in []float64) float64 {
+func DistancePct(in []float64) float64 {
 	mean := Average(in)
 	standardDev := StandardDeviation(in)
-	total := (standardDev * 100) / mean
-
+	total := (standardDev / mean) * 100
+	if standardDev == 0 {
+		return 0
+	}
 	return total
 }
 
@@ -511,4 +513,41 @@ func AppendArrayToArray(receiver []interface{}, giver []interface{}) []interface
 		receiver = append(receiver, element)
 	}
 	return receiver
+}
+
+func FilterOutliners(in []float64) []float64 {
+	/*
+		The formula to convert datapoint in points z is:
+		z =	(x−μ)/σ
+		where
+		x original value,
+		μ average of the given dataset
+		σ is the standard deviation.
+	*/
+
+	out := []float64{}
+	bounderies := []float64{-1.3, 1.3} // boundaries set here are very restrictive standard range is -3, 3
+	average := Average(in)
+	standardDev := StandardDeviation(in)
+	for _, value := range in {
+		x := value - average
+		if x != 0 {
+			if x < 0 {
+				x = x * -1
+			}
+			x = x / standardDev
+			if x > bounderies[0] && x < bounderies[1] {
+				//log.Debugf("Value of x: %.4f out value %.4F", x, value)
+				out = append(out, value)
+			} else {
+				log.Debugf("Filtering out value %.4F x: %.4f", value, x)
+			}
+		} else {
+			out = append(out, value)
+		}
+
+	}
+
+	return out
+
 }

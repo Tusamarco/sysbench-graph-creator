@@ -16,7 +16,9 @@ type GlobalDef struct {
 }
 
 type Parser struct {
-	SourceDataPath string `toml:sourceDataPath`
+	SourceDataPath  string `toml:sourceDataPath`
+	FilterOutliners bool   `toml:filterOutliners`
+	DistanceLabel   string `toml:distanceLabel`
 }
 
 type Render struct {

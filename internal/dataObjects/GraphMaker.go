@@ -292,7 +292,7 @@ func (Graph *GraphGenerator) RenderReults() bool {
 
 						}
 
-						log.Debugf(testResult.Key.TestName)
+						//log.Debugf(testResult.Key.TestName)
 
 						break
 					}

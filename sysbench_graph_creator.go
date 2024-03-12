@@ -84,7 +84,7 @@ func main() {
 	err1 := fileProc.GetFileList(config.Parser.SourceDataPath)
 	testCollection, err1 := fileProc.GetTestCollectionArray()
 	calculator := new(DO.Calculator)
-	calculator.Init()
+	calculator.Init(config)
 	testsResults := calculator.BuildResults(testCollection)
 	producersAr := calculator.GroupByProducers()
 

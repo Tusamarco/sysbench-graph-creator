@@ -15,12 +15,13 @@ import (
 type Calculator struct {
 	LocalCollection map[int]TestCollection
 	TestResults     map[TestKey]ResultTest //TestKey is the key for the map
-
+	configuration   global.Configuration
 }
 
-func (calcIMpl *Calculator) Init() {
+func (calcIMpl *Calculator) Init(configuration global.Configuration) {
 	calcIMpl.LocalCollection = make(map[int]TestCollection)
 	calcIMpl.TestResults = make(map[TestKey]ResultTest)
+	calcIMpl.configuration = configuration
 }
 
 func (calcIMpl *Calculator) BuildResults(testCollections []TestCollection) map[TestKey]ResultTest {
@@ -190,7 +191,7 @@ func (calcIMpl *Calculator) transformLablesForMultipleExecutions(test []Test) (b
 			}
 
 			//calculate final value, std and gerror
-			resultValueAr = append(resultValueAr, evaluateMultipleExecutionsValues(tempValuesAr, label, threadI))
+			resultValueAr = append(resultValueAr, calcIMpl.evaluateMultipleExecutionsValues(tempValuesAr, label, threadI))
 			tempValuesAr = []float64{}
 			//log.Debugf("")
 		}
@@ -206,15 +207,21 @@ func (calcIMpl *Calculator) transformLablesForMultipleExecutions(test []Test) (b
 }
 
 // here we do the sdt calculation and variance
-func evaluateMultipleExecutionsValues(arValues []float64, label string, threadId int) ResultValue {
+func (calcIMpl *Calculator) evaluateMultipleExecutionsValues(arValues []float64, label string, threadId int) ResultValue {
 
+	// This call it is used to filter out the outliners ...
+	// Is an attempt to reduce the noise and mistakes
+	// if not working just change the config to false filterOutliners = false
+	if calcIMpl.configuration.Parser.FilterOutliners {
+		arValues = global.FilterOutliners(arValues)
+	}
 	avgValue := global.Average(arValues)
 	avgValue, _ = stats.Round(avgValue, 2)
 	//stdValue, _ := stats.StdDevP(arValues)
 	stdValue := global.StandardDeviation(arValues)
 	stdValue, _ = stats.Round(stdValue, 2)
-	//errorV := global.Variance(arValues)
-	errorV := global.Variance(arValues)
+	//errorV := global.DistancePct(arValues)
+	errorV := global.DistancePct(arValues)
 	if math.IsNaN(errorV) {
 		errorV = 0
 	}
@@ -373,26 +380,29 @@ func (calcIMpl *Calculator) getLabelSTDGerror(labels map[string][]ResultValue) (
 	resulTestGerrAr := []float64{0}
 
 	for label, resultValueAr := range labels {
-
-		for _, resultValue := range resultValueAr {
-			if resultValue.Value > 0 && !math.IsNaN(resultValue.STD) {
-				valuesSTDAr = append(valuesSTDAr, resultValue.STD)
-				valuesGerrAr = append(valuesGerrAr, resultValue.Lerror)
+		if label == calcIMpl.configuration.Parser.DistanceLabel {
+			for _, resultValue := range resultValueAr {
+				if resultValue.Value > 0 && !math.IsNaN(resultValue.STD) {
+					valuesSTDAr = append(valuesSTDAr, resultValue.STD)
+					valuesGerrAr = append(valuesGerrAr, resultValue.Lerror)
+				}
 			}
+
+			stdValue := 0.00
+			if len(valuesSTDAr) > 1 {
+				stdValue = global.Average(valuesSTDAr)
+			}
+
+			stdValue, _ = stats.Round(stdValue, 2)
+			valuesGerrAr = global.FilterOutliners(valuesGerrAr)
+			gerrValue := global.Average(valuesGerrAr)
+			log.Debugf("Label: %s  STD: %.4f Dist(pct): %.4f", label, stdValue, gerrValue)
+
+			resulTestSTDAr = append(resulTestSTDAr, stdValue)
+			resulTestGerrAr = append(resulTestGerrAr, gerrValue)
 		}
-		stdValue := 0.00
-		if len(valuesSTDAr) > 1 {
-			stdValue = global.Average(valuesSTDAr)
-		}
-
-		stdValue, _ = stats.Round(stdValue, 2)
-		gerrValue := global.Variance(valuesGerrAr)
-		log.Debugf("Label: %s  STD: %.4f Dist(pct): %.4f", label, stdValue, gerrValue)
-
-		resulTestSTDAr = append(resulTestSTDAr, stdValue)
-		resulTestGerrAr = append(resulTestGerrAr, gerrValue)
-
 	}
+	resulTestGerrAr = global.FilterOutliners(resulTestGerrAr)
 	finalSTD := global.Average(resulTestSTDAr)
 	finalGerr := global.Average(resulTestGerrAr)
 	log.Debugf("Final :  STD: %.4f Dist(pct): %.4f", finalSTD, finalGerr)
@@ -429,21 +439,24 @@ func (calcIMpl *Calculator) calculateProducerSTDGerror(ar []Producer) []Producer
 			stdValuePre = global.Average(valuesSTDArPre)
 			stdValuePre, _ = stats.Round(stdValuePre, 2)
 		}
-		gerrValuePre := global.Variance(valuesGerrArPre)
+		valuesGerrArPre = global.FilterOutliners(valuesGerrArPre)
+		gerrValuePre, _ := stats.Median(valuesGerrArPre)
 
 		stdValuePost := 0.0
 		if len(valuesSTDArPost) > 1 {
 			stdValuePost = global.Average(valuesSTDArPost)
 			stdValuePost, _ = stats.Round(stdValuePost, 2)
 		}
-		gerrValuePost := global.Variance(valuesGerrArPost)
+		valuesGerrArPost = global.FilterOutliners(valuesGerrArPost)
+		gerrValuePost, _ := stats.Median(valuesGerrArPost)
 
 		stdValueWrite := 0.0
 		if len(valuesSTDArWrite) > 1 {
 			stdValueWrite = global.Average(valuesSTDArWrite)
 			stdValueWrite, _ = stats.Round(stdValueWrite, 2)
 		}
-		gerrValueWrite := global.Variance(valuesGerrArWrite)
+		valuesGerrArWrite = global.FilterOutliners(valuesGerrArWrite)
+		gerrValueWrite, _ := stats.Median(valuesGerrArWrite)
 
 		producer.STDReadPre = stdValuePre
 		producer.GerrorReadPre = gerrValuePre
