@@ -1,6 +1,6 @@
 #v.0.1.0
 [parser]
-sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/not_processed/sysbench/" #MY-PS-8034-BASE
+sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/not_processed/sysbench_research_for_better_performance/" #MY-PS-8034-BASE
 #sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/not_processed/sysbench/MY-PS-8034-NO-AHI"
 filterOutliners = true
 distanceLabel = "operations/s"
@@ -31,7 +31,7 @@ printChartsFormat="jpeg"
 
 [global]
 testName="Comparing PS VS MySQL"
-logLevel = "info"
+logLevel = "debug"
 logTarget = "stdout" #stdout | file
 logFile = "/Users/marcotusa/tmp/sysbench_graph_creator.log"
 performance = true

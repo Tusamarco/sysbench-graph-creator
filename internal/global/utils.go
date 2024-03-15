@@ -524,6 +524,7 @@ func FilterOutliners(in []float64) []float64 {
 		μ average of the given dataset
 		σ is the standard deviation.
 	*/
+	//return in
 
 	out := []float64{}
 	bounderies := []float64{-1.3, 1.3} // boundaries set here are very restrictive standard range is -3, 3

@@ -16,6 +16,7 @@ type Calculator struct {
 	LocalCollection map[int]TestCollection
 	TestResults     map[TestKey]ResultTest //TestKey is the key for the map
 	configuration   global.Configuration
+	collections     []TestCollection
 }
 
 func (calcIMpl *Calculator) Init(configuration global.Configuration) {
@@ -26,6 +27,7 @@ func (calcIMpl *Calculator) Init(configuration global.Configuration) {
 
 func (calcIMpl *Calculator) BuildResults(testCollections []TestCollection) map[TestKey]ResultTest {
 	//emptyArray := []ResultTest{}
+	calcIMpl.collections = testCollections
 	calcIMpl.LocalCollection = calcIMpl.getCollectionMap(testCollections)
 	log.Debugf("Imported %d collections of %d", len(calcIMpl.LocalCollection), len(testCollections))
 	calcIMpl.loopCollections()
@@ -298,6 +300,7 @@ func (calcIMpl *Calculator) assignTestsResultsToProducers(producersAr []Producer
 	tmpArrayTypes := []TestType{}
 
 	for idx, producer := range producersAr {
+		log.Debugf("Processing Producer: %s %s", producer.MySQLProducer, producer.MySQLVersion)
 		for _, dim := range DIMENSIONS() {
 			for _, prePost := range PREPOSTWRITE() {
 				for _, AType := range ACTIONTYPES() {
@@ -340,6 +343,12 @@ func (calcIMpl *Calculator) assignTestsResultsToProducers(producersAr []Producer
 								}
 								//producer.TestsTypes = append(producer.TestsTypes, newTestType)
 								tmpArrayTypes = append(tmpArrayTypes, newTestType)
+							} else {
+								log.Debugf("		Seems that the following Test type is already present: %s %d %d %d %s ",
+									key.TestName,
+									key.Dimension,
+									key.SelectPreWrites,
+									key.ActionType, key.TestCollectionName)
 							}
 						}
 					}
@@ -368,7 +377,9 @@ func (calcIMpl *Calculator) assignTestsResultsToProducers(producersAr []Producer
 		producersAr[idx] = producer
 	}
 
-	log.Infof("How many I have General: %d ; Producer 1: %d ; Producer2: %d", len(calcIMpl.TestResults), len(producersAr[0].TestsResults), len(producersAr[1].TestsResults))
+	//log.Infof("How many I have General: %d ; Producer 1: %d ; Producer2: %d", len(calcIMpl.TestResults), len(producersAr[0].TestsResults), len(producersAr[1].TestsResults))
+	log.Infof("Found # %d Collections. Built # %d Producer(s)", len(calcIMpl.collections), len(producersAr))
+
 	return producersAr
 }
 
