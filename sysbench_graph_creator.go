@@ -103,7 +103,8 @@ func main() {
 		exitWithCode(1)
 	}
 	graph := new(DO.GraphGenerator)
-	graph.Init(config, producersAr)
+	graph.Init(config, producersAr, testCollection)
+
 	if graph.RenderReults() {
 		if graph.BuildPage() {
 			graph.ActivateHTTPServer()

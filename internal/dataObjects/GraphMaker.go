@@ -62,6 +62,7 @@ type GraphGenerator struct {
 	chartsStats   []charTest
 	labels        []string
 	statLabels    []string
+	benchTool     string
 }
 
 func (Graph *GraphGenerator) checkConfig() bool {
@@ -89,7 +90,11 @@ func (Graph *GraphGenerator) checkConfig() bool {
 
 }
 
-func (Graph *GraphGenerator) Init(inConfig global.Configuration, inProducers []Producer) {
+func (Graph *GraphGenerator) Init(inConfig global.Configuration, inProducers []Producer, testCollection []TestCollection) {
+	if len(testCollection) > 0 {
+		Graph.benchTool = testCollection[0].Producer
+	}
+
 	Graph.producers = inProducers
 	Graph.configuration = inConfig
 	Graph.checkConfig()
@@ -408,7 +413,8 @@ func (Graph *GraphGenerator) BuildPage() bool {
 
 	if Graph.configuration.Render.PrintData {
 		_ = os.Mkdir(Graph.configuration.Render.DestinationPath, os.ModePerm)
-		fileFordata, err := os.Create(Graph.configuration.Render.DestinationPath + "data_" + global.ReplaceString(Graph.testName, " ", "") + ".html")
+		fileFordata, err := os.Create(Graph.configuration.Render.DestinationPath + "data_" +
+			global.ReplaceString(Graph.testName, " ", "") + "_" + Graph.benchTool + ".html")
 		if err != nil {
 			panic(err)
 		}
@@ -425,7 +431,8 @@ func (Graph *GraphGenerator) BuildPage() bool {
 
 	if Graph.configuration.Render.PrintStats {
 		_ = os.Mkdir(Graph.configuration.Render.DestinationPath, os.ModePerm)
-		fileForStats, err := os.Create(Graph.configuration.Render.DestinationPath + "stats_" + global.ReplaceString(Graph.testName, " ", "") + ".html")
+		fileForStats, err := os.Create(Graph.configuration.Render.DestinationPath + "stats_" +
+			global.ReplaceString(Graph.testName, " ", "") + "_" + Graph.benchTool + ".html")
 		if err != nil {
 			panic(err)
 		}
