@@ -86,8 +86,10 @@ func (calcIMpl *Calculator) loopCollections() {
 			myTempCollectionMap[0].SelectPostWrites)
 
 		calcIMpl.loopTests(myTempCollectionMap)
+		myTempCollectionMap = make(map[int]TestCollection)
 
 	}
+	log.Debugf("Test Result collection found %d", len(myTempCollectionMap))
 
 }
 
