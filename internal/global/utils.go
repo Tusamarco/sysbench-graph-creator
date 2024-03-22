@@ -527,7 +527,7 @@ func FilterOutliners(in []float64) []float64 {
 	//return in
 
 	out := []float64{}
-	bounderies := []float64{-1.3, 1.3} // boundaries set here are very restrictive standard range is -3, 3
+	bounderies := []float64{-2.0, 2.0} // boundaries set here are very restrictive standard range is -3, 3
 	average := Average(in)
 	standardDev := StandardDeviation(in)
 	for _, value := range in {

@@ -32,6 +32,10 @@ type Render struct {
 	StatsLabels       string `toml:statslabels`
 	ReadSummaryLabel  string `toml:readSummaryLabel`
 	WriteSummaryLabel string `toml:writeSummaryLabel`
+	ChartHeight       int    `toml:chartHeight`
+	ChartWidth        int    `toml:chartWidth`
+	PrintCharts       bool   `toml:printCharts`
+	PrintChartsFormat string `toml:printChartsFormat`
 }
 
 // Main structure working as container for the configuration sections

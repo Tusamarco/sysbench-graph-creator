@@ -411,6 +411,7 @@ func (Graph *GraphGenerator) BuildPage() bool {
 	var pageData *components.Page
 	var pageStats *components.Page
 
+	//we create the html page with the data
 	if Graph.configuration.Render.PrintData {
 		_ = os.Mkdir(Graph.configuration.Render.DestinationPath, os.ModePerm)
 		fileFordata, err := os.Create(Graph.configuration.Render.DestinationPath + "data_" +
@@ -429,6 +430,7 @@ func (Graph *GraphGenerator) BuildPage() bool {
 
 	}
 
+	//we create the html page with stats
 	if Graph.configuration.Render.PrintStats {
 		_ = os.Mkdir(Graph.configuration.Render.DestinationPath, os.ModePerm)
 		fileForStats, err := os.Create(Graph.configuration.Render.DestinationPath + "stats_" +
@@ -444,6 +446,12 @@ func (Graph *GraphGenerator) BuildPage() bool {
 		Graph.addStatsToPage(pageStats)
 
 		pageStats.Render(io.MultiWriter(fileForStats))
+
+	}
+
+	//we create the image files (one for each graph)
+	if Graph.configuration.Render.PrintCharts {
+		//todo
 
 	}
 
