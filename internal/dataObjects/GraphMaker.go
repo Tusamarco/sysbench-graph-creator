@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	global "sysbench-graph-creator/internal/global"
@@ -451,11 +452,92 @@ func (Graph *GraphGenerator) BuildPage() bool {
 
 	//we create the image files (one for each graph)
 	if Graph.configuration.Render.PrintCharts {
-		//todo
-
+		Graph.PrintImages()
 	}
 
 	return true
+}
+
+func (Graph *GraphGenerator) PrintImages() {
+	//todo I AM HERE we have an issue printing twice
+	if _, err := os.Stat(Graph.configuration.Render.DestinationPath + "images/"); os.IsNotExist(err) {
+		err = os.Mkdir(Graph.configuration.Render.DestinationPath+"images/", os.ModePerm)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	for _, chartDataTest := range Graph.chartsData {
+		if !strings.Contains(strings.ToLower(chartDataTest.title), "warmup") {
+			for _, labelReference := range Graph.labels {
+				image := Graph.configuration.Render.DestinationPath + "images/"
+				bar := charts.NewBar()
+
+				titleFull := global.ReplaceString(chartDataTest.title, "_", " ") + " " + chartDataTest.dimension
+				if chartDataTest.prePost == 0 {
+					titleFull += " Pre Writes"
+				} else {
+					titleFull += " Post Writes"
+				}
+
+				titleFull = titleFull + "_" + labelReference
+				image = image + global.ReplaceString(titleFull, "[\\s\\/%\\(\\)]", "_") + ".jpg"
+				//image = image + global.ReplaceString(titleFull, "__", "_") + ".jpg"
+
+				bar.SetGlobalOptions(
+					charts.WithInitializationOpts(opts.Initialization{
+						Width:  strconv.Itoa(Graph.configuration.Render.ChartWidth) + "px",
+						Height: strconv.Itoa(Graph.configuration.Render.ChartHeight) + "px",
+					}),
+					charts.WithLegendOpts(opts.Legend{Width: "90%", Height: "300", Bottom: "-1%", Type: "plain"}),
+					charts.WithXAxisOpts(opts.XAxis{Name: "Threads", NameGap: 20, NameLocation: "middle", SplitLine: &opts.SplitLine{Show: opts.Bool(true)}}),
+					charts.WithAnimation(false),
+					charts.WithToolboxOpts(opts.Toolbox{
+						Right: "20%",
+						Feature: &opts.ToolBoxFeature{
+							SaveAsImage: &opts.ToolBoxFeatureSaveAsImage{
+								Type:  "jpg",
+								Title: "Save File",
+							},
+							DataView: &opts.ToolBoxFeatureDataView{
+								Title: "DataView",
+								Lang:  []string{"data view", "turn off", "refresh"},
+							},
+						}},
+					),
+					charts.WithTitleOpts(opts.Title{Title: titleFull, Subtitle: labelReference}),
+					charts.WithYAxisOpts(opts.YAxis{Name: labelReference, NameLocation: "middle", NameGap: 60, AxisLabel: &opts.AxisLabel{Rotate: 0.00, Align: "right"}}),
+				)
+				for _, chartItemInstance := range chartDataTest.chartItems {
+					if chartItemInstance.label == labelReference {
+						//log.Debugf("Len items data %d  test %s label %s", len(chartItemInstance.data), chartDataTest.title, chartItemInstance.label)
+						bar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.provider, chartItemInstance.data)
+					}
+				}
+
+				path, file := filepath.Split(image)
+				suffix := filepath.Ext(file)[1:]
+				fileName := file[0 : len(file)-len(suffix)-1]
+
+				config := &SnapshotConfig{
+					RenderContent: bar.RenderContent(),
+					Path:          path,
+					FileName:      fileName,
+					Suffix:        suffix,
+					Quality:       1,
+					KeepHtml:      false,
+				}
+
+				errImage := MakeSnapshot(config)
+				if errImage != nil {
+					log.Errorf("Error printing image %s", image)
+				} else {
+					log.Debugf("Printing image %s", image)
+				}
+
+			}
+		}
+	}
 }
 
 func (Graph *GraphGenerator) ActivateHTTPServer() {

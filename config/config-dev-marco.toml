@@ -28,7 +28,7 @@ filterTestBy=""
 #//TODO end
 chartHeight=400
 chartWidth=800
-printCharts=false
+printCharts=true
 printChartsFormat="jpeg"
 
 
