@@ -30,6 +30,7 @@ chartHeight=400
 chartWidth=800
 printCharts=false
 printChartsFormat="jpeg"
+convertChartsToCsv=true
 
 
 [global]
@@ -37,5 +38,4 @@ testName="Comparing PS VS MySQL"
 logLevel = "info"
 logTarget = "stdout" #stdout | file
 logFile = "/Users/marcotusa/tmp/sysbench_graph_creator.log"
-performance = true
-OS = "na"
+

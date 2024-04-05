@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 const HTML = "html"
@@ -74,10 +75,14 @@ func MakeSnapshot(config *SnapshotConfig) error {
 	if !filepath.IsAbs(htmlPath) {
 		htmlPath, _ = filepath.Abs(htmlPath)
 	}
+	chromedp.Flag("headless", true)
 
 	ctx, cancel := chromedp.NewContext(
 		context.Background(),
 	)
+
+	ctx, cancel = context.WithTimeout(ctx, (time.Second)*2)
+
 	defer cancel()
 
 	htmlFullPath := filepath.Join(htmlPath, fileName+"."+HTML)
