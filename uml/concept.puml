@@ -1,0 +1,35 @@
+@startmindmap
+'https://plantuml.com/mindmap-diagram
+
+caption global overview
+title sysbench Graph creator
+* Start
+++[#white] <&target> Read Params
++++[#lightblue] <&list> List of file to process
+++++[#lightgreen] create Test collection
+++++[#lightgreen] <&loop> parse files
+++++[#lightgreen] <&loop> build test object
+
++++[#lightgray] Title of the test
+***[#lightgray] Output path
+++[#lightgreen] <&loop> for each test in collection
++++[#lightgreen] <&flag> build graph object
++++[#lightgreen] render graph
+
+* <&box> Objects
+++[#FFE033] graph
+++[#FFE033] test
+++[#FFE033] run
+
+
+header
+Tusa
+endheader
+
+center footer January 2024
+
+legend right
+  Short
+  legend
+endlegend
+@endmindmap
