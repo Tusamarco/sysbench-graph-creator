@@ -263,7 +263,14 @@ func (Graph *GraphGenerator) RenderReults() bool {
 						newCharTestStat.actionType = testResult.Key.ActionType
 						newCharTestStat.prePost = testResult.Key.SelectPreWrites
 
-						for idx, label := range Graph.labels {
+						//IF test is select scan add TotalTime label to the list
+						mylables := []string{}
+						if strings.Contains(testResult.Key.TestName, "select_run_select_scan") {
+							mylables = []string{"TotalTime"}
+						}
+						mylables = global.StringsAppendArrayToArray(mylables, Graph.labels)
+
+						for idx, label := range mylables {
 							newThreads := []int{}
 
 							//Filling data
@@ -469,7 +476,16 @@ func (Graph *GraphGenerator) PrintImages() {
 
 	for _, chartDataTest := range Graph.chartsData {
 		if !strings.Contains(strings.ToLower(chartDataTest.title), "warmup") {
-			for _, labelReference := range Graph.labels {
+			//todo IF test is select scan we onl show totaltime and latency
+			mylables := []string{}
+			if strings.Contains(chartDataTest.title, "select_run_select_scan") {
+				mylables = []string{"TotalTime", "latencyPct95(μs)"}
+				chartDataTest.title += " (Lower is better) "
+			} else {
+				mylables = global.StringsAppendArrayToArray(mylables, Graph.labels)
+			}
+
+			for _, labelReference := range mylables {
 				image := Graph.configuration.Render.DestinationPath + "images/"
 				bar := charts.NewBar()
 
@@ -553,11 +569,25 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 	//			add the data
 	for _, chartDataTest := range Graph.chartsData {
 		if !strings.Contains(strings.ToLower(chartDataTest.title), "warmup") {
-			for _, labelReference := range Graph.labels {
+
+			//IF test is select scan we onl show totaltime and latency
+			mylables := []string{}
+			if strings.Contains(chartDataTest.title, "select_run_select_scan") {
+				mylables = []string{"TotalTime", "latencyPct95(μs)"}
+				chartDataTest.title += " (Lower is better) "
+			} else {
+				mylables = global.StringsAppendArrayToArray(mylables, Graph.labels)
+			}
+
+			for _, labelReference := range mylables {
 
 				bar := charts.NewBar()
 
 				titleFull := global.ReplaceString(chartDataTest.title, "_", " ") + " " + chartDataTest.dimension
+				if strings.Contains(labelReference, "latencyPct95(μs)") {
+					titleFull += " (Lower is better)"
+				}
+
 				if chartDataTest.prePost == 0 {
 					titleFull += " Pre Writes"
 				} else {
@@ -617,7 +647,17 @@ func (Graph *GraphGenerator) addStatsToPage(page *components.Page) {
 	//			add the data
 	for _, chartStatTest := range Graph.chartsStats {
 		if !strings.Contains(strings.ToLower(chartStatTest.title), "warmup") {
-			for _, labelReference := range Graph.statLabels {
+
+			//IF test is select scan we onl show totaltime and latency
+			mylables := []string{}
+			if strings.Contains(chartStatTest.title, "select_run_select_scan") {
+				mylables = []string{"TotalTime", "latencyPct95(μs)"}
+				chartStatTest.title += " (Lower is better) "
+			} else {
+				mylables = global.StringsAppendArrayToArray(mylables, Graph.labels)
+			}
+
+			for _, labelReference := range mylables {
 
 				bar := charts.NewBar()
 

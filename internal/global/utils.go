@@ -508,7 +508,7 @@ func StandardDeviation(num []float64) float64 {
 	return sd
 }
 
-func AppendArrayToArray(receiver []interface{}, giver []interface{}) []interface{} {
+func StringsAppendArrayToArray(receiver []string, giver []string) []string {
 	for _, element := range giver {
 		receiver = append(receiver, element)
 	}
