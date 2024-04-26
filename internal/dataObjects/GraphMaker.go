@@ -459,11 +459,16 @@ func (Graph *GraphGenerator) BuildPage() bool {
 		Graph.PrintImages()
 	}
 
+	//we create the CSV file with all data
+	if Graph.configuration.Render.ConvertChartsToCsv {
+		Graph.PrintDataCsv()
+	}
+
 	return true
 }
 
 func (Graph *GraphGenerator) PrintImages() {
-	//todo I AM HERE We have an issue with the printing, the object seems crashing after few prints this looks more related to chromedp than other code
+
 	if _, err := os.Stat(Graph.configuration.Render.DestinationPath + "images/"); os.IsNotExist(err) {
 		err = os.Mkdir(Graph.configuration.Render.DestinationPath+"images/", os.ModePerm)
 		if err != nil {
@@ -473,7 +478,6 @@ func (Graph *GraphGenerator) PrintImages() {
 
 	for _, chartDataTest := range Graph.chartsData {
 		if !strings.Contains(strings.ToLower(chartDataTest.title), "warmup") {
-			//todo IF test is select scan we only show totaltime and latency
 			mylables := []string{}
 			if strings.Contains(chartDataTest.title, "select_run_select_scan") {
 				mylables = []string{"TotalTime", "latencyPct95(μs)"}
@@ -644,7 +648,11 @@ Test
 		threads, Provider1-test, provider2-test,...
 */
 func (Graph *GraphGenerator) PrintDataCsv() bool {
-
+	//TODO CSV
+	for _, chartStatTest := range Graph.chartsStats {
+		if strings.Contains(chartStatTest.title, "select_run_select_scan") {
+		}
+	}
 	return true
 }
 

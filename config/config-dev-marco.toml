@@ -9,12 +9,13 @@ distanceLabel = "operations/s"
 [render]
 graphType="column"
 destinationPath=""
-printStats=true
-printData=true
+printStats=false
+printData=false
+convertChartsToCsv=true
 httpServerPort=8089
 httpServerIp="localhost"
-labels="operations/s,latencyPct95(μs)"
-#labels="TotalTime,Events/s,operations/s,writes/s,reads/s,latencyPct95(μs)"
+#labels="operations/s,latencyPct95(μs)"
+labels="TotalTime,Events/s,operations/s,writes/s,reads/s,latencyPct95(μs)"
 statslabels="operations/s,latencyPct95(μs)"
 readSummaryLabel="reads/s"
 writeSummaryLabel="writes/s"
@@ -30,7 +31,7 @@ chartHeight=400
 chartWidth=800
 printCharts=false
 printChartsFormat="jpeg"
-convertChartsToCsv=true
+
 
 
 [global]
