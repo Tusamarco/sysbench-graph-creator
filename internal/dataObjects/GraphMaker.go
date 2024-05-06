@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	global "sysbench-graph-creator/internal/global"
@@ -647,11 +648,31 @@ Test
 	Label
 		threads, Provider1-test, provider2-test,...
 */
+type csvDat struct {
+	name      string
+	dimension string
+	data      [][]string
+}
+
 func (Graph *GraphGenerator) PrintDataCsv() bool {
 	//TODO CSV
+	csvLabels := make(map[string]csvDat)
+
 	for _, chartStatTest := range Graph.chartsStats {
+		labels := []string{}
+
 		if strings.Contains(chartStatTest.title, "select_run_select_scan") {
 		}
+
+		for _, chart := range chartStatTest.chartItems {
+			if !slices.Contains(labels, chart.label) {
+				labels = append(labels, chart.label)
+				data := make([][]string, len(chartStatTest.threads)+1)
+				data[0] = make([]string, chartStatTest.numProviders+1)
+				csvLabels[chart.label] = csvDat{chart.label, chartStatTest.dimension, data}
+			}
+		}
+		log.Infof("Label for CSV test: %s  %s", chartStatTest.title, labels)
 	}
 	return true
 }

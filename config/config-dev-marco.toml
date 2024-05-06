@@ -1,6 +1,6 @@
 #v.0.1.0
 [parser]
-sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/not_processed/sysbench_research_for_better_performance/optimized" #MY-PS-8034-BASE
+sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/not_processed/sysbench_research_for_better_performance/debug" #MY-PS-8034-BASE
 #sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/not_processed/sysbench/MY-PS-8034-NO-AHI"
 filterOutliners = true
 distanceLabel = "operations/s"
@@ -10,7 +10,7 @@ distanceLabel = "operations/s"
 graphType="column"
 destinationPath=""
 printStats=false
-printData=false
+printData=true
 convertChartsToCsv=true
 httpServerPort=8089
 httpServerIp="localhost"
