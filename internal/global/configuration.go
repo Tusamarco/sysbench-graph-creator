@@ -37,6 +37,7 @@ type Render struct {
 	PrintCharts        bool   `toml:printCharts`
 	PrintChartsFormat  string `toml:printChartsFormat`
 	ConvertChartsToCsv bool   `toml:convertChartsToCsv`
+	CsvDestinationPath string `toml:csvDestinationPath`
 }
 
 // Main structure working as container for the configuration sections
