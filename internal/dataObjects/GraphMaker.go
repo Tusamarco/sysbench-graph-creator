@@ -1,6 +1,8 @@
 package dataObjects
 
 import (
+	"bufio"
+	"fmt"
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/components"
 	"github.com/go-echarts/go-echarts/v2/opts"
@@ -10,9 +12,11 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"sort"
 	"strconv"
 	"strings"
 	global "sysbench-graph-creator/internal/global"
+	"time"
 )
 
 type chartItem struct {
@@ -82,6 +86,11 @@ func (Graph *GraphGenerator) checkConfig() bool {
 	if Graph.configuration.Render.DestinationPath == "" {
 		Graph.configuration.Render.DestinationPath, _ = os.Getwd()
 		Graph.configuration.Render.DestinationPath += "/html/"
+	}
+
+	if Graph.configuration.Render.CsvDestinationPath == "" {
+		Graph.configuration.Render.CsvDestinationPath, _ = os.Getwd()
+		Graph.configuration.Render.CsvDestinationPath += "/csv/"
 	}
 
 	return true
@@ -656,22 +665,108 @@ type csvDat struct {
 
 func (Graph *GraphGenerator) PrintDataCsv() bool {
 	//TODO CSV
+	currentTime := time.Now()
+	csvOutputPath := Graph.configuration.Render.CsvDestinationPath
+	if !global.CheckIfPathExists(csvOutputPath) {
+		err := os.Mkdir(csvOutputPath, 0755)
+		if err != nil {
+			log.Errorf("Creating CSV path: %s", err.Error())
+		}
+
+	}
+	csvFileName := Graph.configuration.Global.TestName + "_" + currentTime.Format("2006-01-02")
+	csvFile, err := os.Create(csvOutputPath + csvFileName + ".csv")
+	if err != nil {
+		log.Errorf("Creating CSV File: %s", err.Error())
+	}
+	defer csvFile.Close()
+
 	csvLabels := make(map[string]csvDat)
 
-	for _, chartStatTest := range Graph.chartsStats {
+	for _, chartStatTest := range Graph.chartsData {
 		labels := []string{}
+		providers := []string{}
 
 		if strings.Contains(chartStatTest.title, "select_run_select_scan") {
 		}
 
+		csvFile.WriteString(chartStatTest.title + "," + chartStatTest.dimension + "\n")
+		csvFile.Sync()
+
+		// we first prepare the objects and the map
 		for _, chart := range chartStatTest.chartItems {
+			if !slices.Contains(providers, chart.provider) {
+				providers = append(providers, chart.provider)
+			}
+
 			if !slices.Contains(labels, chart.label) {
 				labels = append(labels, chart.label)
 				data := make([][]string, len(chartStatTest.threads)+1)
-				data[0] = make([]string, chartStatTest.numProviders+1)
+
+				for i := 0; i < len(data); i++ {
+					data[i] = make([]string, chartStatTest.numProviders+1)
+					if i > 0 {
+						data[i][0] = strconv.Itoa(chartStatTest.threads[i-1])
+					} else {
+						data[i][0] = "Threads"
+					}
+
+				}
 				csvLabels[chart.label] = csvDat{chart.label, chartStatTest.dimension, data}
 			}
 		}
+		// we want to have the order of the providers to remain always the same
+		sort.Strings(providers)
+
+		// we now fill the data
+		providerPosition := 0
+		for _, provider := range providers {
+			providerPosition++
+
+			//loop also per label
+			for _, kLabel := range labels {
+
+				for _, chart := range chartStatTest.chartItems {
+					if chart.provider == provider && chart.label == kLabel {
+						label := chart.label
+						myCsvLabel := csvLabels[label]
+						csvData := myCsvLabel.data
+
+						csvData[0][providerPosition] = strings.ReplaceAll(provider, ",", "")
+
+						for i := 0; i < len(chart.data); i++ {
+							csvData[i+1][providerPosition] = fmt.Sprintf("%v", chart.data[i].Value)
+						}
+						myCsvLabel.data = csvData
+						log.Debug(csvData)
+					}
+				}
+			}
+		}
+
+		//we now flush all the data of the test to file
+		for i := 0; i < len(chartStatTest.threads)+1; i++ {
+			lineBuffer := bufio.NewWriter(csvFile)
+			// we want labels in order so we ue the label array
+			for _, kLabel := range labels {
+				csvData := csvLabels[kLabel]
+				if i == 0 {
+					lineBuffer.WriteString(kLabel + ",")
+				} else {
+					lineBuffer.WriteString(",")
+				}
+				for ip := 0; ip < (chartStatTest.numProviders + 1); ip++ {
+					lineBuffer.WriteString(fmt.Sprintf("%v,", csvData.data[i][ip]))
+				}
+				lineBuffer.WriteString(",")
+
+			}
+			lineBuffer.WriteString("\n")
+			lineBuffer.Flush()
+			csvFile.Sync()
+
+		}
+		csvFile.WriteString("\n\n")
 		log.Infof("Label for CSV test: %s  %s", chartStatTest.title, labels)
 	}
 	return true
