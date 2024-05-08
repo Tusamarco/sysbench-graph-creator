@@ -690,7 +690,7 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 		if strings.Contains(chartStatTest.title, "select_run_select_scan") {
 		}
 
-		csvFile.WriteString(chartStatTest.title + "," + chartStatTest.dimension + "\n")
+		csvFile.WriteString(chartStatTest.title + " " + chartStatTest.dimension + "\n")
 		csvFile.Sync()
 
 		// we first prepare the objects and the map
