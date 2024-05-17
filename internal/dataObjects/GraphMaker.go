@@ -746,7 +746,7 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 		// we want to have the order of the providers to remain always the same
 		sort.Strings(providers)
 
-		// we now fill the dataBar
+		// we now fill the dataLine
 		providerPosition := 0
 		for _, provider := range providers {
 			providerPosition++
@@ -762,8 +762,8 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 
 						csvData[0][providerPosition] = strings.ReplaceAll(provider, ",", "")
 
-						for i := 0; i < len(chart.dataBar); i++ {
-							csvData[i+1][providerPosition] = fmt.Sprintf("%v", chart.dataBar[i].Value)
+						for i := 0; i < len(chart.dataLine); i++ {
+							csvData[i+1][providerPosition] = fmt.Sprintf("%v", chart.dataLine[i].Value)
 						}
 						myCsvLabel.data = csvData
 						log.Debug(csvData)
@@ -772,7 +772,7 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 			}
 		}
 
-		//we now flush all the dataBar of the test to file
+		//we now flush all the dataLine of the test to file
 		for i := 0; i < len(chartStatTest.threads)+1; i++ {
 			lineBuffer := bufio.NewWriter(csvFile)
 			// we want labels in order so we ue the label array
