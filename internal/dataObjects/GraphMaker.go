@@ -540,8 +540,9 @@ func (Graph *GraphGenerator) PrintImages() {
 
 				bar.SetGlobalOptions(
 					charts.WithInitializationOpts(opts.Initialization{
-						Width:  strconv.Itoa(Graph.configuration.Render.ChartWidth) + "px",
-						Height: strconv.Itoa(Graph.configuration.Render.ChartHeight) + "px",
+						Width:           strconv.Itoa(Graph.configuration.Render.ChartWidth) + "px",
+						Height:          strconv.Itoa(Graph.configuration.Render.ChartHeight) + "px",
+						BackgroundColor: "white",
 					}),
 					charts.WithLegendOpts(opts.Legend{Width: "90%", Height: "300", Bottom: "-1%", Type: "plain"}),
 					charts.WithXAxisOpts(opts.XAxis{Name: "Threads", NameGap: 20, NameLocation: "middle", SplitLine: &opts.SplitLine{Show: opts.Bool(true)}}),
