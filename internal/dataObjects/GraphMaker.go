@@ -24,7 +24,8 @@ type chartItem struct {
 	provider string
 	order    int
 	axis     int
-	data     []opts.BarData
+	dataBar  []opts.BarData
+	dataLine []opts.LineData
 	color    string
 	labelX   string
 	labelY   string
@@ -241,7 +242,7 @@ func (Graph *GraphGenerator) RenderReults() bool {
 			}
 			newCharTestData := charTest{
 				title:        testType.Name,
-				charType:     "bar",
+				charType:     "line",
 				numProviders: producersLen,
 			}
 			newCharTestData.chartItems = []chartItem{}
@@ -260,7 +261,7 @@ func (Graph *GraphGenerator) RenderReults() bool {
 					if tmpResult.Key == testKey {
 						testResult = tmpResult
 
-						//filling data object
+						//filling dataBar object
 						newCharTestData.dimension = testResult.Key.Dimension
 						newCharTestData.actionType = testResult.Key.ActionType
 						newCharTestData.prePost = testResult.Key.SelectPreWrites
@@ -280,14 +281,18 @@ func (Graph *GraphGenerator) RenderReults() bool {
 						for idx, label := range mylables {
 							newThreads := []int{}
 
-							//Filling data
+							//Filling dataBar
 							newCharItem := new(chartItem)
 							newCharItem.order = idx + 1
 							newCharItem.label = label
 							newCharItem.provider = producer.MySQLProducer + producer.MySQLVersion + producer.TestCollectionsName
 							newCharItem.labelX = XAXISLABELDEFAULT
 							newCharItem.labelY = label
-							newThreads, newCharItem.data = Graph.getBarData(testResult, label)
+							if newCharTestData.charType == "bar" {
+								newThreads, newCharItem.dataBar = Graph.getBarData(testResult, label)
+							} else if newCharTestData.charType == "line" {
+								newThreads, newCharItem.dataLine = Graph.getLineData(testResult, label)
+							}
 							newCharTestData.chartItems = append(newCharTestData.chartItems, *newCharItem)
 
 							if len(newCharTestData.threads) < len(newThreads) {
@@ -302,7 +307,7 @@ func (Graph *GraphGenerator) RenderReults() bool {
 							newCharStatsItem.provider = producer.MySQLProducer + producer.MySQLVersion + producer.TestCollectionsName
 							newCharStatsItem.labelX = XAXISLABELDEFAULT
 							newCharStatsItem.labelY = label
-							newThreads, newCharStatsItem.data = Graph.getBarStats(testResult, label)
+							newThreads, newCharStatsItem.dataBar = Graph.getBarStats(testResult, label)
 							newCharTestStat.chartItems = append(newCharTestStat.chartItems, *newCharStatsItem)
 
 							if len(newCharTestStat.threads) < len(newThreads) {
@@ -330,6 +335,7 @@ func (Graph *GraphGenerator) RenderReults() bool {
 	return true
 }
 
+// todo summary
 func (Graph *GraphGenerator) calculateSummary() bool {
 	for _, chartDataTest := range Graph.chartsData {
 		var evalLabel string
@@ -421,12 +427,30 @@ func (Graph *GraphGenerator) getBarData(testResult ResultTest, inLabel string) (
 	return threads, items
 }
 
+func (Graph *GraphGenerator) getLineData(testResult ResultTest, inLabel string) ([]int, []opts.LineData) {
+	values := []ResultValue{}
+	threads := []int{}
+	for key, labelValues := range testResult.Labels {
+		key = strings.TrimSpace(key)
+		if key == strings.TrimSpace(inLabel) {
+			values = labelValues
+			break
+		}
+	}
+	items := make([]opts.LineData, 0)
+	for _, value := range values {
+		items = append(items, opts.LineData{Value: value.Value, Name: value.Label})
+		threads = append(threads, value.ThreadNumber)
+	}
+	return threads, items
+}
+
 func (Graph *GraphGenerator) BuildPage() bool {
-	// Identify if what we need to print (stats/data both)
+	// Identify if what we need to print (stats/dataBar both)
 	var pageData *components.Page
 	var pageStats *components.Page
 
-	//we create the html page with the data
+	//we create the html page with the dataBar
 	if Graph.configuration.Render.PrintData {
 		_ = os.Mkdir(Graph.configuration.Render.DestinationPath, os.ModePerm)
 		fileFordata, err := os.Create(Graph.configuration.Render.DestinationPath + "data_" +
@@ -469,7 +493,7 @@ func (Graph *GraphGenerator) BuildPage() bool {
 		Graph.PrintImages()
 	}
 
-	//we create the CSV file with all data
+	//we create the CSV file with all dataBar
 	if Graph.configuration.Render.ConvertChartsToCsv {
 		Graph.PrintDataCsv()
 	}
@@ -498,7 +522,10 @@ func (Graph *GraphGenerator) PrintImages() {
 
 			for _, labelReference := range mylables {
 				image := Graph.configuration.Render.DestinationPath + "images/"
-				bar := charts.NewBar()
+
+				//if chartDataTest.charType == "bar" {
+				bar := charts.NewLine()
+				//}
 
 				titleFull := global.ReplaceString(chartDataTest.title, "_", " ") + " " + chartDataTest.dimension
 				if chartDataTest.prePost == 0 {
@@ -528,7 +555,7 @@ func (Graph *GraphGenerator) PrintImages() {
 							},
 							DataView: &opts.ToolBoxFeatureDataView{
 								Title: "DataView",
-								Lang:  []string{"data view", "turn off", "refresh"},
+								Lang:  []string{"dataBar view", "turn off", "refresh"},
 							},
 						}},
 					),
@@ -537,8 +564,8 @@ func (Graph *GraphGenerator) PrintImages() {
 				)
 				for _, chartItemInstance := range chartDataTest.chartItems {
 					if chartItemInstance.label == labelReference {
-						//log.Debugf("Len items data %d  test %s label %s", len(chartItemInstance.data), chartDataTest.title, chartItemInstance.label)
-						bar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.provider, chartItemInstance.data)
+						//log.Debugf("Len items dataBar %d  test %s label %s", len(chartItemInstance.dataBar), chartDataTest.title, chartItemInstance.label)
+						bar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.provider, chartItemInstance.dataLine)
 					}
 				}
 
@@ -577,7 +604,7 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 	// 	Parse labels
 	//	set axis labels based on the label
 	//		parse provider
-	//			add the data
+	//			add the dataBar
 	for _, chartDataTest := range Graph.chartsData {
 		if !strings.Contains(strings.ToLower(chartDataTest.title), "warmup") {
 
@@ -592,7 +619,7 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 
 			for _, labelReference := range mylables {
 
-				bar := charts.NewBar()
+				bar := charts.NewLine()
 
 				titleFull := global.ReplaceString(chartDataTest.title, "_", " ") + " " + chartDataTest.dimension
 				if strings.Contains(labelReference, "latencyPct95(μs)") {
@@ -625,7 +652,7 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 							},
 							DataView: &opts.ToolBoxFeatureDataView{
 								Title: "DataView",
-								Lang:  []string{"data view", "turn off", "refresh"},
+								Lang:  []string{"dataBar view", "turn off", "refresh"},
 							},
 						}},
 					),
@@ -634,8 +661,8 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 				)
 				for _, chartItemInstance := range chartDataTest.chartItems {
 					if chartItemInstance.label == labelReference {
-						//log.Debugf("Len items data %d  test %s label %s", len(chartItemInstance.data), chartDataTest.title, chartItemInstance.label)
-						bar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.provider, chartItemInstance.data)
+						//log.Debugf("Len items dataBar %d  test %s label %s", len(chartItemInstance.dataBar), chartDataTest.title, chartItemInstance.label)
+						bar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.provider, chartItemInstance.dataLine)
 					}
 				}
 
@@ -718,7 +745,7 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 		// we want to have the order of the providers to remain always the same
 		sort.Strings(providers)
 
-		// we now fill the data
+		// we now fill the dataBar
 		providerPosition := 0
 		for _, provider := range providers {
 			providerPosition++
@@ -734,8 +761,8 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 
 						csvData[0][providerPosition] = strings.ReplaceAll(provider, ",", "")
 
-						for i := 0; i < len(chart.data); i++ {
-							csvData[i+1][providerPosition] = fmt.Sprintf("%v", chart.data[i].Value)
+						for i := 0; i < len(chart.dataBar); i++ {
+							csvData[i+1][providerPosition] = fmt.Sprintf("%v", chart.dataBar[i].Value)
 						}
 						myCsvLabel.data = csvData
 						log.Debug(csvData)
@@ -744,7 +771,7 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 			}
 		}
 
-		//we now flush all the data of the test to file
+		//we now flush all the dataBar of the test to file
 		for i := 0; i < len(chartStatTest.threads)+1; i++ {
 			lineBuffer := bufio.NewWriter(csvFile)
 			// we want labels in order so we ue the label array
@@ -778,7 +805,7 @@ func (Graph *GraphGenerator) addStatsToPage(page *components.Page) {
 	// 	Parse labels
 	//	set axis labels based on the label
 	//		parse provider
-	//			add the data
+	//			add the dataBar
 	for _, chartStatTest := range Graph.chartsStats {
 		if !strings.Contains(strings.ToLower(chartStatTest.title), "warmup") {
 
@@ -825,7 +852,7 @@ func (Graph *GraphGenerator) addStatsToPage(page *components.Page) {
 							},
 							DataView: &opts.ToolBoxFeatureDataView{
 								Title: "DataView",
-								Lang:  []string{"data view", "turn off", "refresh"},
+								Lang:  []string{"dataBar view", "turn off", "refresh"},
 							},
 						}},
 					),
@@ -834,7 +861,7 @@ func (Graph *GraphGenerator) addStatsToPage(page *components.Page) {
 
 				for _, chartItemInstance := range chartStatTest.chartItems {
 					if chartItemInstance.label == labelReference {
-						bar.SetXAxis(chartStatTest.threads).AddSeries(chartItemInstance.provider, chartItemInstance.data)
+						bar.SetXAxis(chartStatTest.threads).AddSeries(chartItemInstance.provider, chartItemInstance.dataBar)
 
 					}
 				}
