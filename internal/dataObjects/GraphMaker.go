@@ -86,12 +86,11 @@ func (Graph *GraphGenerator) checkConfig() bool {
 
 	if Graph.configuration.Render.DestinationPath == "" {
 		Graph.configuration.Render.DestinationPath, _ = os.Getwd()
-		Graph.configuration.Render.DestinationPath += "/html/"
+		Graph.configuration.Render.HtmlDestinationPath = Graph.configuration.Render.DestinationPath + string(os.PathSeparator) + "html" + string(os.PathSeparator)
 	}
 
 	if Graph.configuration.Render.CsvDestinationPath == "" {
-		Graph.configuration.Render.CsvDestinationPath, _ = os.Getwd()
-		Graph.configuration.Render.CsvDestinationPath += "/csv/"
+		Graph.configuration.Render.CsvDestinationPath = Graph.configuration.Render.DestinationPath + string(os.PathSeparator) + "csv" + string(os.PathSeparator)
 	}
 
 	return true
@@ -452,8 +451,8 @@ func (Graph *GraphGenerator) BuildPage() bool {
 
 	//we create the html page with the dataBar
 	if Graph.configuration.Render.PrintData {
-		_ = os.Mkdir(Graph.configuration.Render.DestinationPath, os.ModePerm)
-		fileFordata, err := os.Create(Graph.configuration.Render.DestinationPath + "data_" +
+		_ = os.Mkdir(Graph.configuration.Render.HtmlDestinationPath, os.ModePerm)
+		fileFordata, err := os.Create(Graph.configuration.Render.HtmlDestinationPath + "data_" +
 			global.ReplaceString(Graph.testName, " ", "") + "_" + Graph.benchTool + ".html")
 		if err != nil {
 			panic(err)
@@ -471,8 +470,8 @@ func (Graph *GraphGenerator) BuildPage() bool {
 
 	//we create the html page with stats
 	if Graph.configuration.Render.PrintStats {
-		_ = os.Mkdir(Graph.configuration.Render.DestinationPath, os.ModePerm)
-		fileForStats, err := os.Create(Graph.configuration.Render.DestinationPath + "stats_" +
+		_ = os.Mkdir(Graph.configuration.Render.HtmlDestinationPath, os.ModePerm)
+		fileForStats, err := os.Create(Graph.configuration.Render.HtmlDestinationPath + "stats_" +
 			global.ReplaceString(Graph.testName, " ", "") + "_" + Graph.benchTool + ".html")
 		if err != nil {
 			panic(err)
@@ -487,15 +486,14 @@ func (Graph *GraphGenerator) BuildPage() bool {
 		pageStats.Render(io.MultiWriter(fileForStats))
 
 	}
+	//we create the CSV file with all dataBar
+	if Graph.configuration.Render.ConvertChartsToCsv {
+		Graph.PrintDataCsv()
+	}
 
 	//we create the image files (one for each graph)
 	if Graph.configuration.Render.PrintCharts {
 		Graph.PrintImages()
-	}
-
-	//we create the CSV file with all dataBar
-	if Graph.configuration.Render.ConvertChartsToCsv {
-		Graph.PrintDataCsv()
 	}
 
 	return true
@@ -503,8 +501,8 @@ func (Graph *GraphGenerator) BuildPage() bool {
 
 func (Graph *GraphGenerator) PrintImages() {
 
-	if _, err := os.Stat(Graph.configuration.Render.DestinationPath + "images/"); os.IsNotExist(err) {
-		err = os.Mkdir(Graph.configuration.Render.DestinationPath+"images/", os.ModePerm)
+	if _, err := os.Stat(Graph.configuration.Render.HtmlDestinationPath + string(os.PathSeparator) + "images" + string(os.PathSeparator)); os.IsNotExist(err) {
+		err = os.Mkdir(Graph.configuration.Render.HtmlDestinationPath+string(os.PathSeparator)+"images", os.ModePerm)
 		if err != nil {
 			panic(err)
 		}
@@ -521,7 +519,7 @@ func (Graph *GraphGenerator) PrintImages() {
 			}
 
 			for _, labelReference := range mylables {
-				image := Graph.configuration.Render.DestinationPath + "images/"
+				image := Graph.configuration.Render.HtmlDestinationPath + string(os.PathSeparator) + "images" + string(os.PathSeparator)
 
 				//if chartDataTest.charType == "bar" {
 				bar := charts.NewLine()

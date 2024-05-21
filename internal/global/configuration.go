@@ -22,22 +22,23 @@ type Parser struct {
 }
 
 type Render struct {
-	GraphType          string `toml:graphType`
-	DestinationPath    string `toml:destinationPath`
-	PrintStats         bool   `toml:printStats`
-	PrintData          bool   `toml:printData`
-	HttpServerPort     int    `toml:httpServerPort`
-	HttpServerIp       string `toml:httpServerIp`
-	Labels             string `toml:labels`
-	StatsLabels        string `toml:statslabels`
-	ReadSummaryLabel   string `toml:readSummaryLabel`
-	WriteSummaryLabel  string `toml:writeSummaryLabel`
-	ChartHeight        int    `toml:chartHeight`
-	ChartWidth         int    `toml:chartWidth`
-	PrintCharts        bool   `toml:printCharts`
-	PrintChartsFormat  string `toml:printChartsFormat`
-	ConvertChartsToCsv bool   `toml:convertChartsToCsv`
-	CsvDestinationPath string `toml:csvDestinationPath`
+	GraphType           string `toml:graphType`
+	DestinationPath     string `toml:destinationPath`
+	PrintStats          bool   `toml:printStats`
+	PrintData           bool   `toml:printData`
+	HttpServerPort      int    `toml:httpServerPort`
+	HttpServerIp        string `toml:httpServerIp`
+	Labels              string `toml:labels`
+	StatsLabels         string `toml:statslabels`
+	ReadSummaryLabel    string `toml:readSummaryLabel`
+	WriteSummaryLabel   string `toml:writeSummaryLabel`
+	ChartHeight         int    `toml:chartHeight`
+	ChartWidth          int    `toml:chartWidth`
+	PrintCharts         bool   `toml:printCharts`
+	PrintChartsFormat   string `toml:printChartsFormat`
+	ConvertChartsToCsv  bool   `toml:convertChartsToCsv`
+	CsvDestinationPath  string `toml:csvDestinationPath`
+	HtmlDestinationPath string
 }
 
 // Main structure working as container for the configuration sections
