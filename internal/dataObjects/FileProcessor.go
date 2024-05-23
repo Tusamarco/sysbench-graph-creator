@@ -118,8 +118,9 @@ func (fileProc *FileProcessor) identifyPerPostWrite() {
 			if myTestCollection.Name == fileProc.testCollectionAr[y].Name &&
 				myTestCollection.Dimension == fileProc.testCollectionAr[y].Dimension &&
 				myTestCollection.ActionType == fileProc.testCollectionAr[y].ActionType &&
-				myTestCollection.RunNumber == fileProc.testCollectionAr[y].RunNumber {
-
+				myTestCollection.RunNumber == fileProc.testCollectionAr[y].RunNumber &&
+				myTestCollection.MySQLProducer == fileProc.testCollectionAr[y].MySQLProducer &&
+				myTestCollection.MySQLVersion == fileProc.testCollectionAr[y].MySQLVersion {
 				if myTestCollection.DateStart.After(fileProc.testCollectionAr[y].DateStart) {
 					myTestCollection.SelectPostWrites = POSTWRITE
 					fileProc.testCollectionAr[i] = myTestCollection
