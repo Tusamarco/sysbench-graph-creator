@@ -87,6 +87,8 @@ func (Graph *GraphGenerator) checkConfig() bool {
 	if Graph.configuration.Render.DestinationPath == "" {
 		Graph.configuration.Render.DestinationPath, _ = os.Getwd()
 		Graph.configuration.Render.HtmlDestinationPath = Graph.configuration.Render.DestinationPath + string(os.PathSeparator) + "html" + string(os.PathSeparator)
+	} else {
+		Graph.configuration.Render.HtmlDestinationPath = Graph.configuration.Render.DestinationPath + string(os.PathSeparator) + "html" + string(os.PathSeparator)
 	}
 
 	if Graph.configuration.Render.CsvDestinationPath == "" {
@@ -459,7 +461,7 @@ func (Graph *GraphGenerator) BuildPage() bool {
 		}
 
 		pageData = components.NewPage()
-		pageData.SetLayout(components.PageFlexLayout)
+		//pageData.SetLayout(components.PageFlexLayout)
 		pageData.PageTitle = Graph.testName
 
 		Graph.addDataToPage(pageData)
@@ -478,7 +480,7 @@ func (Graph *GraphGenerator) BuildPage() bool {
 		}
 
 		pageStats = components.NewPage()
-		pageStats.SetLayout(components.PageFlexLayout)
+		//pageStats.SetLayout(components.PageFlexLayout)
 		pageStats.PageTitle = Graph.testName + " STATISTICS"
 
 		Graph.addStatsToPage(pageStats)
@@ -634,11 +636,11 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 
 				bar.SetGlobalOptions(
 					charts.WithInitializationOpts(opts.Initialization{
-						Width:  "800px",
-						Height: "400px",
+						Width:  "1200px",
+						Height: "500px",
 					}),
-					charts.WithLegendOpts(opts.Legend{Width: "90%", Height: "300", Bottom: "-1%", Type: "scroll"}),
-					//charts.WithLegendOpts(opts.Legend{Width: "90%", Height: "300", Bottom: "-1%"}),
+					charts.WithLegendOpts(opts.Legend{Width: "90%", Height: "40%", Bottom: "-1%", Type: "plain"}),
+					//charts.WithLegendOpts(opts.Legend{Width: "100%", Height: "40%", Bottom: "-1%"}),
 					charts.WithXAxisOpts(opts.XAxis{Name: "Threads", NameGap: 20, NameLocation: "middle", SplitLine: &opts.SplitLine{Show: opts.Bool(true)}}),
 					//charts.WithColorsOpts(opts.Colors{"blue", "orange"}),
 					//charts.WithLegendOpts(opts.Legend{Bottom: "0%"}),

@@ -385,7 +385,7 @@ func (test *Test) getAllRuns(fileProc *FileProcessor, tescImpl TestCollection) (
 
 	for fileProc.MyScanner.Scan() {
 		tescImpl.PBarr.Add(1)
-		time.Sleep(1 * time.Microsecond / 10)
+		//time.Sleep(1 * time.Microsecond / 10)
 
 		line := fileProc.MyScanner.Text()
 		//log.Debugf(line)
