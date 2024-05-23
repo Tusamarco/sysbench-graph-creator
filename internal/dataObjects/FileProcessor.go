@@ -248,12 +248,15 @@ func (tescImpl *TestCollection) getProducer(name string) string {
 	}
 
 	index := len(name) - 1
-	if strings.Contains(name, "MySQL") {
-		index = strings.Index(name, " -")
+	index1 := strings.Index(name, " -")
+	index2 := strings.Index(name, " (")
 
-	} else if strings.Contains(name, "Percona") {
-		index = strings.Index(name, " (")
+	if index2 < index1 && index2 > 1 {
+		index = index2
+	} else {
+		index = index1
 	}
+
 	name = name[:index]
 	return name
 }
