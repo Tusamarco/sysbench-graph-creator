@@ -227,7 +227,7 @@ func (tescImpl *TestCollection) getTestCollectionMeta(meta string, path string) 
 			case "engine":
 				tescImpl.Engine = values[1]
 			case "mysqlproducer":
-				tescImpl.MySQLProducer = values[1]
+				tescImpl.MySQLProducer = tescImpl.getProducer(values[1])
 			case "mysqlversion":
 				tescImpl.MySQLVersion = values[1]
 
@@ -240,6 +240,18 @@ func (tescImpl *TestCollection) getTestCollectionMeta(meta string, path string) 
 
 	}
 	return true
+}
+
+func (tescImpl *TestCollection) getProducer(name string) string {
+	index := len(name) - 1
+	if strings.Contains(name, "MySQL") {
+		index = strings.Index(name, " -")
+
+	} else if strings.Contains(name, "Percona") {
+		index = strings.Index(name, " (")
+	}
+	name = name[:index]
+	return name
 }
 
 /*
