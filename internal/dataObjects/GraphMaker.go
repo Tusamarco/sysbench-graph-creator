@@ -596,7 +596,7 @@ func (Graph *GraphGenerator) PrintImages() {
 }
 
 func (Graph *GraphGenerator) ActivateHTTPServer() {
-
+	//todo
 }
 
 func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
