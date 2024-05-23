@@ -243,6 +243,10 @@ func (tescImpl *TestCollection) getTestCollectionMeta(meta string, path string) 
 }
 
 func (tescImpl *TestCollection) getProducer(name string) string {
+	if len(name) < 1 {
+		return name
+	}
+
 	index := len(name) - 1
 	if strings.Contains(name, "MySQL") {
 		index = strings.Index(name, " -")
