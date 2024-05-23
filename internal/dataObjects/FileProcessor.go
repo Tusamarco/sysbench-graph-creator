@@ -251,8 +251,10 @@ func (tescImpl *TestCollection) getProducer(name string) string {
 	index1 := strings.Index(name, " -")
 	index2 := strings.Index(name, " (")
 
-	if index2 < index1 && index2 > 1 {
+	if index2 < index1 && index2 > 1 || index1 < 0 {
 		index = index2
+	} else if index1 < 0 && index2 < 0 {
+		index = index
 	} else {
 		index = index1
 	}
