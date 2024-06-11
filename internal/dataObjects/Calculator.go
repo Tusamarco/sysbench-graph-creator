@@ -4,6 +4,7 @@ import (
 	"github.com/montanaflynn/stats"
 	log "github.com/sirupsen/logrus"
 	"math"
+	"regexp"
 	"sort"
 	"strings"
 	global "sysbench-graph-creator/internal/global"
@@ -286,7 +287,8 @@ func (calcIMpl *Calculator) GroupByProducers() []Producer {
 					0,
 					0,
 					0,
-					0}
+					0,
+					""}
 				log.Debugf("Adding producer %v", newProducer)
 				producersAr = append(producersAr, newProducer)
 			}
@@ -295,9 +297,46 @@ func (calcIMpl *Calculator) GroupByProducers() []Producer {
 	}
 	producersAr = calcIMpl.assignTestsResultsToProducers(producersAr)
 	producersAr = calcIMpl.calculateProducerSTDGerror(producersAr)
+	producersAr = calcIMpl.assignColorToProducers(producersAr)
 	return producersAr
 
 }
+
+func (calcIMpl *Calculator) assignColorToProducers(producersAr []Producer) []Producer {
+
+	colorName := ""
+	colorVersion := ""
+	colorCode := ""
+
+	for _, color := range calcIMpl.configuration.Colors.Colors {
+		colorAttr := strings.Split(color, ";")
+		colorName = strings.Split(colorAttr[0], "=")[1]
+		colorVersion = strings.Split(colorAttr[1], "=")[1]
+		colorCode = strings.Split(colorAttr[2], "=")[1]
+		for idx, producer := range producersAr {
+
+			re := regexp.MustCompile(`^.*` + colorName + `.*$`)
+			matched := re.FindStringSubmatch(producer.MySQLProducer)
+			if matched != nil {
+
+				re2 := regexp.MustCompile(`^.*` + colorVersion + `.*`)
+				matched2 := re2.FindStringSubmatch(producer.MySQLVersion)
+
+				if matched2 != nil {
+					//&&
+					//	strings.Contains(producer.MySQLVersion, colorVersion) {
+					producer.Color = colorCode
+					producersAr[idx] = producer
+				}
+			}
+
+		}
+
+	}
+
+	return producersAr
+}
+
 func (calcIMpl *Calculator) assignTestsResultsToProducers(producersAr []Producer) []Producer {
 	tmpArrayTypes := []TestType{}
 

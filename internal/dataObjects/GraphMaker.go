@@ -45,6 +45,7 @@ type charTest struct {
 	dataBetter   []int
 	isBetter     bool
 	totalPoints  float64
+	color        string
 }
 
 const (
@@ -287,6 +288,7 @@ func (Graph *GraphGenerator) RenderReults() bool {
 							newCharItem.order = idx + 1
 							newCharItem.label = label
 							newCharItem.provider = producer.MySQLProducer + producer.MySQLVersion + producer.TestCollectionsName
+							newCharItem.color = producer.Color
 							newCharItem.labelX = XAXISLABELDEFAULT
 							newCharItem.labelY = label
 							if newCharTestData.charType == "bar" {
@@ -306,6 +308,7 @@ func (Graph *GraphGenerator) RenderReults() bool {
 							newCharStatsItem.order = idx + 1
 							newCharStatsItem.label = label
 							newCharStatsItem.provider = producer.MySQLProducer + producer.MySQLVersion + producer.TestCollectionsName
+							newCharStatsItem.color = producer.Color
 							newCharStatsItem.labelX = XAXISLABELDEFAULT
 							newCharStatsItem.labelY = label
 							newThreads, newCharStatsItem.dataBar = Graph.getBarStats(testResult, label)
@@ -566,7 +569,9 @@ func (Graph *GraphGenerator) PrintImages() {
 				for _, chartItemInstance := range chartDataTest.chartItems {
 					if chartItemInstance.label == labelReference {
 						//log.Debugf("Len items dataBar %d  test %s label %s", len(chartItemInstance.dataBar), chartDataTest.title, chartItemInstance.label)
-						bar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.provider, chartItemInstance.dataLine)
+						bar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.provider, chartItemInstance.dataLine,
+							charts.WithLineStyleOpts(opts.LineStyle{Color: chartItemInstance.color}),
+							charts.WithItemStyleOpts(opts.ItemStyle{Color: chartItemInstance.color}))
 					}
 				}
 
@@ -663,7 +668,9 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 				for _, chartItemInstance := range chartDataTest.chartItems {
 					if chartItemInstance.label == labelReference {
 						//log.Debugf("Len items dataBar %d  test %s label %s", len(chartItemInstance.dataBar), chartDataTest.title, chartItemInstance.label)
-						bar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.provider, chartItemInstance.dataLine)
+						bar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.provider, chartItemInstance.dataLine,
+							charts.WithLineStyleOpts(opts.LineStyle{Color: chartItemInstance.color}),
+							charts.WithItemStyleOpts(opts.ItemStyle{Color: chartItemInstance.color}))
 					}
 				}
 
@@ -862,7 +869,8 @@ func (Graph *GraphGenerator) addStatsToPage(page *components.Page) {
 
 				for _, chartItemInstance := range chartStatTest.chartItems {
 					if chartItemInstance.label == labelReference {
-						bar.SetXAxis(chartStatTest.threads).AddSeries(chartItemInstance.provider, chartItemInstance.dataBar)
+						bar.SetXAxis(chartStatTest.threads).AddSeries(chartItemInstance.provider, chartItemInstance.dataBar).SetSeriesOptions(charts.WithLineStyleOpts(opts.LineStyle{Color: "black"}),
+							charts.WithItemStyleOpts(opts.ItemStyle{Color: "black"}))
 
 					}
 				}

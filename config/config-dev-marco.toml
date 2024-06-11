@@ -1,6 +1,8 @@
 #v.0.1.0
 [parser]
-sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/for_report/PS_VS_MYS_8036_optimized/logs" #MY-PS-8034-BASE
+sourceDataPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base/logs"
+#sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/for_report/PS_VS_MYS_8036_optimized/logs" #MY-PS-8034-BASE
+
 #sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/not_processed/sysbench/MY-PS-8034-NO-AHI"
 filterOutliners = true
 distanceLabel = "operations/s"
@@ -8,12 +10,14 @@ distanceLabel = "operations/s"
 
 [render]
 graphType="column"
-destinationPath=""
+destinationPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base"
+#destinationPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base/logs"
 csvDestinationPath=""
 printStats=false
 printData=true
 convertChartsToCsv=true
-printCharts=true
+printCharts=false
+
 httpServerPort=8089
 httpServerIp="localhost"
 labels="operations/s,latencyPct95(μs)"
@@ -40,3 +44,13 @@ logLevel = "info"
 logTarget = "stdout" #stdout | file
 logFile = "/Users/marcotusa/tmp/sysbench_graph_creator.log"
 
+[colors]
+color=[
+    "name=Percona;version=8.0;color=#0e1a53"
+    ,"name=Percona;version=8.4;color=#ff7e1a"
+    ,"name=Percona;version=5.7;color=#f0b336"
+    ,"name=MySQL;version=5.7;color=#bac0cd"
+    ,"name=MySQL;version=8.0;color=#93c7ff"
+    ,"name=MySQL;version=8.4;color=#f9a98a"
+    ,"name=Maria;version=11.3;color=#f24500"
+]
