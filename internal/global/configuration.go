@@ -21,6 +21,10 @@ type Parser struct {
 	DistanceLabel   string `toml:distanceLabel`
 }
 
+type Color struct {
+	Colors []string `toml:"color"`
+}
+
 type Render struct {
 	GraphType           string `toml:graphType`
 	DestinationPath     string `toml:destinationPath`
@@ -47,6 +51,7 @@ type Configuration struct {
 	Parser Parser    `toml:"parser"`
 	Render Render    `toml:"render"`
 	Global GlobalDef `toml:"global"`
+	Colors Color     `toml:"colors"`
 }
 
 // Methods to return the config as map

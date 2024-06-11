@@ -247,7 +247,7 @@ func (tescImpl *TestCollection) getProducer(name string) string {
 		return name
 	}
 
-	index := len(name) - 1
+	index := len(name)
 	index1 := strings.Index(name, " -")
 	index2 := strings.Index(name, " (")
 
@@ -257,6 +257,9 @@ func (tescImpl *TestCollection) getProducer(name string) string {
 		index = index
 	} else {
 		index = index1
+	}
+	if index < 0 {
+		index = len(name)
 	}
 
 	name = name[:index]

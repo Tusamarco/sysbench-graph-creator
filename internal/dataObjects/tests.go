@@ -45,6 +45,7 @@ type Producer struct {
 	GerrorReadPost      float64
 	STDRWrite           float64
 	GerrorWrite         float64
+	Color               string
 }
 
 type TestType struct {
