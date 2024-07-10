@@ -47,6 +47,7 @@ logFile = "/Users/marcotusa/tmp/sysbench_graph_creator.log"
 [colors]
 color=[
     "name=Percona;version=8.0;color=#0e1a53"
+    ,"name=Percona;version=9.0;color=#117e1a"
     ,"name=Percona;version=8.4;color=#ff7e1a"
     ,"name=Percona;version=5.7;color=#f0b336"
     ,"name=MySQL;version=5.7;color=#bac0cd"
