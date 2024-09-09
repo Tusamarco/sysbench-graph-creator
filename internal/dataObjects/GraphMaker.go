@@ -503,6 +503,13 @@ func (Graph *GraphGenerator) BuildPage() bool {
 
 	return true
 }
+func (Graph *GraphGenerator) getTestFilters(filters string) []string {
+	if len(filters) > 0 {
+		return strings.Split(filters, ",")
+	}
+	return nil
+
+}
 
 func (Graph *GraphGenerator) PrintImages() {
 
@@ -611,6 +618,12 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 	//	set axis labels based on the label
 	//		parse provider
 	//			add the dataBar
+
+	testFilters := Graph.getTestFilters(Graph.configuration.Render.FilterByTests)
+	if testFilters != nil {
+
+	}
+
 	for _, chartDataTest := range Graph.chartsData {
 		if !strings.Contains(strings.ToLower(chartDataTest.title), "warmup") {
 

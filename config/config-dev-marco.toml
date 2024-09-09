@@ -36,6 +36,7 @@ filterTestBy=""
 chartHeight=400
 chartWidth=800
 printChartsFormat="jpeg"
+filterByTests="select_run_range,write_run_update_no_index"
 
 
 [global]
@@ -53,5 +54,6 @@ color=[
     ,"name=MySQL;version=5.7;color=#bac0cd"
     ,"name=MySQL;version=8.0;color=#93c7ff"
     ,"name=MySQL;version=8.4;color=#f9a98a"
+    ,"name=MySQL;version=9.0;color=#cc3a00"
     ,"name=Maria;version=11.3;color=#f24500"
 ]
