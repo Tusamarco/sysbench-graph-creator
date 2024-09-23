@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -59,14 +60,16 @@ const (
 //https://github.com/go-echarts/go-echarts
 
 type GraphGenerator struct {
-	configuration global.Configuration
-	producers     []Producer
-	testName      string
-	chartsData    []charTest
-	chartsStats   []charTest
-	labels        []string
-	statLabels    []string
-	benchTool     string
+	configuration     global.Configuration
+	producers         []Producer
+	testName          string
+	chartsData        []charTest
+	chartsStats       []charTest
+	labels            []string
+	statLabels        []string
+	benchTool         string
+	FilterByDimension []string
+	FilterByTitle     []string
 }
 
 func (Graph *GraphGenerator) checkConfig() bool {
@@ -112,6 +115,18 @@ func (Graph *GraphGenerator) Init(inConfig global.Configuration, inProducers []P
 	Graph.chartsStats = []charTest{}
 	Graph.labels = strings.Split(inConfig.Render.Labels, ",")
 	Graph.statLabels = strings.Split(inConfig.Render.StatsLabels, ",")
+	Graph.FilterByDimension = Graph.getTestFilters(Graph.configuration.Render.FilterByDimension)
+	Graph.FilterByTitle = Graph.getTestFilters(Graph.configuration.Render.FilterTestsByTitle)
+
+	if Graph.FilterByTitle != nil {
+		log.Infof("Applying title filters using %s", Graph.configuration.Render.FilterTestsByTitle)
+
+	}
+
+	if Graph.FilterByDimension != nil {
+		log.Infof("Applying dimension filters using %s", Graph.configuration.Render.FilterByDimension)
+
+	}
 
 }
 
@@ -522,6 +537,15 @@ func (Graph *GraphGenerator) PrintImages() {
 
 	for _, chartDataTest := range Graph.chartsData {
 		if !strings.Contains(strings.ToLower(chartDataTest.title), "warmup") {
+			//checking filters for title and dimension
+			if Graph.checkFilterTitle(chartDataTest) > 0 {
+				continue
+			}
+
+			if Graph.checkFilterDimension(chartDataTest) > 0 {
+				continue
+			}
+
 			mylables := []string{}
 			if strings.Contains(chartDataTest.title, "select_run_select_scan") {
 				mylables = []string{"TotalTime", "latencyPct95(μs)"}
@@ -619,15 +643,19 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 	//		parse provider
 	//			add the dataBar
 
-	testFilters := Graph.getTestFilters(Graph.configuration.Render.FilterByTests)
-	if testFilters != nil {
-
-	}
-
 	for _, chartDataTest := range Graph.chartsData {
 		if !strings.Contains(strings.ToLower(chartDataTest.title), "warmup") {
 
-			//IF test is select scan we onl show totaltime and latency
+			//checking filters for title and dimension
+			if Graph.checkFilterTitle(chartDataTest) > 0 {
+				continue
+			}
+
+			if Graph.checkFilterDimension(chartDataTest) > 0 {
+				continue
+			}
+
+			//IF test is select scan we only show totaltime and latency
 			mylables := []string{}
 			if strings.Contains(chartDataTest.title, "select_run_select_scan") {
 				mylables = []string{"TotalTime", "latencyPct95(μs)"}
@@ -698,6 +726,36 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 
 }
 
+func (Graph *GraphGenerator) checkFilterTitle(chartDataTest charTest) int {
+	if Graph.FilterByTitle != nil {
+		skip := 1
+		for _, filter := range Graph.FilterByTitle {
+			re := regexp.MustCompile(filter)
+			match := re.FindStringSubmatch(chartDataTest.title)
+			if len(match) > 0 {
+				skip = 0
+			}
+		}
+		return skip
+	}
+	return 0
+}
+
+func (Graph *GraphGenerator) checkFilterDimension(chartDataTest charTest) int {
+	if Graph.FilterByTitle != nil {
+		skip := 1
+		for _, filter := range Graph.FilterByDimension {
+			re := regexp.MustCompile(filter)
+			match := re.FindStringSubmatch(chartDataTest.dimension)
+			if len(match) > 0 {
+				skip = 0
+			}
+		}
+		return skip
+	}
+	return 0
+}
+
 /*
 Here we will export each chart as a csv set  where the output should be like
 Test
@@ -731,36 +789,46 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 
 	csvLabels := make(map[string]csvDat)
 
-	for _, chartStatTest := range Graph.chartsData {
+	for _, chartCSVTest := range Graph.chartsData {
+
+		//checking filters for title and dimension
+		if Graph.checkFilterTitle(chartCSVTest) > 0 {
+			continue
+		}
+
+		if Graph.checkFilterDimension(chartCSVTest) > 0 {
+			continue
+		}
+
 		labels := []string{}
 		providers := []string{}
 
-		if strings.Contains(chartStatTest.title, "select_run_select_scan") {
+		if strings.Contains(chartCSVTest.title, "select_run_select_scan") {
 		}
 
-		csvFile.WriteString(chartStatTest.title + " " + chartStatTest.dimension + "\n")
+		csvFile.WriteString(chartCSVTest.title + " " + chartCSVTest.dimension + "\n")
 		csvFile.Sync()
 
 		// we first prepare the objects and the map
-		for _, chart := range chartStatTest.chartItems {
+		for _, chart := range chartCSVTest.chartItems {
 			if !slices.Contains(providers, chart.provider) {
 				providers = append(providers, chart.provider)
 			}
 
 			if !slices.Contains(labels, chart.label) {
 				labels = append(labels, chart.label)
-				data := make([][]string, len(chartStatTest.threads)+1)
+				data := make([][]string, len(chartCSVTest.threads)+1)
 
 				for i := 0; i < len(data); i++ {
-					data[i] = make([]string, chartStatTest.numProviders+1)
+					data[i] = make([]string, chartCSVTest.numProviders+1)
 					if i > 0 {
-						data[i][0] = strconv.Itoa(chartStatTest.threads[i-1])
+						data[i][0] = strconv.Itoa(chartCSVTest.threads[i-1])
 					} else {
 						data[i][0] = "Threads"
 					}
 
 				}
-				csvLabels[chart.label] = csvDat{chart.label, chartStatTest.dimension, data}
+				csvLabels[chart.label] = csvDat{chart.label, chartCSVTest.dimension, data}
 			}
 		}
 		// we want to have the order of the providers to remain always the same
@@ -774,7 +842,7 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 			//loop also per label
 			for _, kLabel := range labels {
 
-				for _, chart := range chartStatTest.chartItems {
+				for _, chart := range chartCSVTest.chartItems {
 					if chart.provider == provider && chart.label == kLabel {
 						label := chart.label
 						myCsvLabel := csvLabels[label]
@@ -793,7 +861,7 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 		}
 
 		//we now flush all the dataLine of the test to file
-		for i := 0; i < len(chartStatTest.threads)+1; i++ {
+		for i := 0; i < len(chartCSVTest.threads)+1; i++ {
 			lineBuffer := bufio.NewWriter(csvFile)
 			// we want labels in order so we ue the label array
 			for _, kLabel := range labels {
@@ -803,7 +871,7 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 				} else {
 					lineBuffer.WriteString(",")
 				}
-				for ip := 0; ip < (chartStatTest.numProviders + 1); ip++ {
+				for ip := 0; ip < (chartCSVTest.numProviders + 1); ip++ {
 					lineBuffer.WriteString(fmt.Sprintf("%v,", csvData.data[i][ip]))
 				}
 				lineBuffer.WriteString(",")
@@ -815,7 +883,7 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 
 		}
 		csvFile.WriteString("\n\n")
-		log.Infof("Label for CSV test: %s  %s", chartStatTest.title, labels)
+		log.Infof("Label for CSV test: %s  %s", chartCSVTest.title, labels)
 	}
 	return true
 }
@@ -829,6 +897,15 @@ func (Graph *GraphGenerator) addStatsToPage(page *components.Page) {
 	//			add the dataBar
 	for _, chartStatTest := range Graph.chartsStats {
 		if !strings.Contains(strings.ToLower(chartStatTest.title), "warmup") {
+
+			//checking filters for title and dimension
+			if Graph.checkFilterTitle(chartStatTest) > 0 {
+				continue
+			}
+
+			if Graph.checkFilterDimension(chartStatTest) > 0 {
+				continue
+			}
 
 			//IF test is select scan we onl show totaltime and latency
 			mylables := []string{}

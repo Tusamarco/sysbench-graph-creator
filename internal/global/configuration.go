@@ -43,7 +43,8 @@ type Render struct {
 	ConvertChartsToCsv  bool   `toml:convertChartsToCsv`
 	CsvDestinationPath  string `toml:csvDestinationPath`
 	HtmlDestinationPath string
-	FilterByTests       string `toml:filterByTests`
+	FilterTestsByTitle  string `toml:filterTestsByTitle`
+	FilterByDimension   string `toml:filterByDimension`
 }
 
 // Main structure working as container for the configuration sections

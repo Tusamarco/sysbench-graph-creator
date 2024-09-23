@@ -37,8 +37,10 @@ showReads=true
 showWrites=true
 showPreWrite=true
 shoPostWrite=true
-filterTestBy=""
 #//TODO end
+filterTestsByTitle="write_run_update_no_index"
+filterByDimension="small"
+
 chartHeight=400
 chartWidth=800
 printChartsFormat="jpeg"
@@ -60,5 +62,5 @@ color=[
     ,"name=MySQL;version=8.0;color=#93c7ff"
     ,"name=MySQL;version=8.4;color=#f9a98a"
     ,"name=MySQL;version=9.0;color=#cc3a00"
-    ,"name=Maria;version=11.3;color=#f24500"
+    ,"name=Maria;version=11.4;color=#f24500"
 ]

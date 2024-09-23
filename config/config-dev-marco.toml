@@ -1,7 +1,9 @@
 #v.0.1.0
 [parser]
-sourceDataPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base/logs"
+sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/benchmarking_on_hetzner/report_data/sysbench"
+#sourceDataPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base/logs"
 #sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/for_report/PS_VS_MYS_8036_optimized/logs" #MY-PS-8034-BASE
+
 
 #sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/not_processed/sysbench/MY-PS-8034-NO-AHI"
 filterOutliners = true
@@ -10,17 +12,19 @@ distanceLabel = "operations/s"
 
 [render]
 graphType="column"
-destinationPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base"
+destinationPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/benchmarking_on_hetzner/results/dev"
+#destinationPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base"
 #destinationPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base/logs"
 csvDestinationPath=""
 printStats=false
 printData=true
-convertChartsToCsv=true
+convertChartsToCsv=false
 printCharts=false
 
 httpServerPort=8089
 httpServerIp="localhost"
-labels="operations/s,latencyPct95(μs)"
+labels="operations/s"
+#labels="operations/s,latencyPct95(μs)"
 #labels="TotalTime,Events/s,operations/s,writes/s,reads/s,latencyPct95(μs)"
 statslabels="operations/s,latencyPct95(μs)"
 readSummaryLabel="reads/s"
@@ -31,12 +35,15 @@ showReads=true
 showWrites=true
 showPreWrite=true
 shoPostWrite=true
-filterTestBy=""
 #//TODO end
+filterTestsByTitle=""
+filterByDimension=""
+#filterTestsBy="select_run_range,write_run_update_no_index"
+#filterByDimension="small,large"
+
 chartHeight=400
 chartWidth=800
 printChartsFormat="jpeg"
-filterByTests="select_run_range,write_run_update_no_index"
 
 
 [global]
