@@ -742,7 +742,7 @@ func (Graph *GraphGenerator) checkFilterTitle(chartDataTest charTest) int {
 }
 
 func (Graph *GraphGenerator) checkFilterDimension(chartDataTest charTest) int {
-	if Graph.FilterByTitle != nil {
+	if Graph.FilterByDimension != nil {
 		skip := 1
 		for _, filter := range Graph.FilterByDimension {
 			re := regexp.MustCompile(filter)
