@@ -3,8 +3,23 @@ package Global
 import (
 	"github.com/Tusamarco/toml"
 	log "github.com/sirupsen/logrus"
+
 	"syscall"
 )
+
+// commandline params
+type Params struct {
+	CsvDestinationPath string
+	FilterByProducer   string
+	FilterByVersion    string
+	FilterByDimension  string
+	FilterByTitle      string
+	Labels             string
+	ConvertChartsToCsv bool
+	PrintCharts        bool
+	PrintData          bool
+	FilterByPrePost    string
+}
 
 // Global scheduler conf
 type GlobalDef struct {
@@ -45,6 +60,9 @@ type Render struct {
 	HtmlDestinationPath string
 	FilterTestsByTitle  string `toml:filterTestsByTitle`
 	FilterByDimension   string `toml:filterByDimension`
+	FilterByVersion     string `toml:filterByVersion`
+	FilterByProducer    string `toml:filterByProducer`
+	FilterByPrePost     string `toml:filterByPrePost`
 }
 
 // Main structure working as container for the configuration sections
@@ -67,6 +85,49 @@ func GetConfig(path string) Configuration {
 	return config
 }
 
+func GetParams() Params {
+	var params Params
+	return params
+}
+
 func (conf *Configuration) fillDefaults() {
 	//conf.Parser.sourceDataPath=""
+}
+
+// We assign the value coming from command line to config
+func (conf *Configuration) ParseCommandLine(params Params) {
+	if params.CsvDestinationPath != "" {
+		conf.Render.CsvDestinationPath = params.CsvDestinationPath
+	}
+	if params.Labels != "" && conf.Render.Labels == "" {
+		conf.Render.Labels = params.Labels
+	}
+	if params.PrintData && !conf.Render.PrintData {
+		conf.Render.PrintData = params.PrintData
+	}
+
+	if params.PrintCharts && !conf.Render.PrintCharts {
+		conf.Render.PrintCharts = params.PrintCharts
+	}
+
+	if params.ConvertChartsToCsv && !conf.Render.ConvertChartsToCsv {
+		conf.Render.ConvertChartsToCsv = params.ConvertChartsToCsv
+	}
+
+	if params.FilterByVersion != "" {
+		conf.Render.FilterByVersion = params.FilterByVersion
+	}
+	if params.FilterByProducer != "" {
+		conf.Render.FilterByProducer = params.FilterByProducer
+	}
+	if params.FilterByTitle != "" {
+		conf.Render.FilterTestsByTitle = params.FilterByTitle
+	}
+	if params.FilterByDimension != "" {
+		conf.Render.FilterByDimension = params.FilterByDimension
+	}
+	if params.FilterByPrePost != "" {
+		conf.Render.FilterByPrePost = params.FilterByPrePost
+	}
+
 }

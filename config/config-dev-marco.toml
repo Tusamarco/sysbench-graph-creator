@@ -1,6 +1,6 @@
 #v.0.1.0
 [parser]
-sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/benchmarking_on_hetzner/report_data/sysbench"
+sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/benchmarking_on_hetzner/archive_original/sysbench"
 #sourceDataPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base/logs"
 #sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/for_report/PS_VS_MYS_8036_optimized/logs" #MY-PS-8034-BASE
 
@@ -30,14 +30,11 @@ statslabels="operations/s,latencyPct95(μs)"
 readSummaryLabel="reads/s"
 writeSummaryLabel="writes/s"
 #labels="TotalTime,RunningThreads,totalEvents,Events/s,Tot Operations,operations/s,tot reads,reads/s,Tot writes,writes/s,oterOps/s,latencyPct95(μs) ,Tot errors,errors/s,Tot reconnects,reconnects/s,Latency(ms) min, Latency(ms) max, Latency(ms) avg, Latency(ms) sum"
-#//TODO start
-showReads=true
-showWrites=true
-showPreWrite=true
-shoPostWrite=true
-#//TODO end
 filterTestsByTitle=""
-filterByDimension=""
+filterByDimension="small,large"
+filterByVersion="8.0,5.7"
+filterByProducer=""
+FilterByPrePost="pre,post"
 #filterTestsBy="select_run_range,write_run_update_no_index"
 #filterByDimension="small,large"
 

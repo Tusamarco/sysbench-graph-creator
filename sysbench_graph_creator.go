@@ -21,7 +21,7 @@ func main() {
 	const (
 		Separator = string(os.PathSeparator)
 	)
-
+	params := global.GetParams()
 	//initialize help
 	help := new(global.HelpText)
 	help.Init()
@@ -38,11 +38,24 @@ func main() {
 	flag.StringVar(&configPath, "configpath", "", "Config file path")
 	flag.StringVar(&sourcePath, "sourcepath", "", "source path")
 	flag.StringVar(&destinationPath, "destinationpath", "", "destination path")
-	flag.StringVar(&testName, "testname", "", "name of the test")
+	flag.StringVar(&params.CsvDestinationPath, "csvDestinationPath", "", "csv destination path")
+
+	flag.StringVar(&params.FilterByProducer, "filterByProducer", "", "filter by producer(s) name, comma separated list")
+	flag.StringVar(&params.FilterByVersion, "filterByVersion", "", "filter by version(s) name, comma separated list")
+	flag.StringVar(&params.FilterByDimension, "filterByDimension", "", "filter by dimension(s) name, comma separated list")
+	flag.StringVar(&params.FilterByTitle, "filterByTitle", "", "filter by test name(s) name, comma separated list")
+	flag.StringVar(&params.FilterByPrePost, "filterByPrePost", "", "filter by pre or post write action , comma separated list [pre|post]. Default: pre,post")
+
+	flag.StringVar(&params.Labels, "labels", "TotalTime,Events/s,operations/s,writes/s,reads/s,latencyPct95(μs)", "list of labels to use (comma separated) default: TotalTime,Events/s,operations/s,writes/s,reads/s,latencyPct95(μs)")
+	flag.BoolVar(&params.ConvertChartsToCsv, "convertCsv", false, "if to convert to csv [false|true]")
+	flag.BoolVar(&params.PrintCharts, "printCharts", false, "if to create jpeg images of the charts [false|true]")
+	flag.BoolVar(&params.PrintData, "printData", true, "if to create html file version")
+
 	//flag.StringVar(nil, "version", pxc_scheduler_handler_version, "version: ")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "\n%s\n", help.GetHelpText())
+		flag.PrintDefaults()
 	}
 	flag.Parse()
 
@@ -70,6 +83,10 @@ func main() {
 
 	//Return our full configuration from file
 	var config = global.GetConfig(currPath + configFile)
+
+	//parameters from command line have higher priority so we parse and replace
+	config.ParseCommandLine(params)
+
 	//initialize the log system
 	if !global.InitLog(config) {
 		fmt.Println("Not able to initialize log system exiting")

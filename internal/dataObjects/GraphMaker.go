@@ -70,6 +70,9 @@ type GraphGenerator struct {
 	benchTool         string
 	FilterByDimension []string
 	FilterByTitle     []string
+	FilterByProducer  []string
+	FilterByVersion   []string
+	FilterByPrePost   []string
 }
 
 func (Graph *GraphGenerator) checkConfig() bool {
@@ -117,6 +120,9 @@ func (Graph *GraphGenerator) Init(inConfig global.Configuration, inProducers []P
 	Graph.statLabels = strings.Split(inConfig.Render.StatsLabels, ",")
 	Graph.FilterByDimension = Graph.getTestFilters(Graph.configuration.Render.FilterByDimension)
 	Graph.FilterByTitle = Graph.getTestFilters(Graph.configuration.Render.FilterTestsByTitle)
+	Graph.FilterByProducer = Graph.getTestFilters(Graph.configuration.Render.FilterByProducer)
+	Graph.FilterByVersion = Graph.getTestFilters(Graph.configuration.Render.FilterByVersion)
+	Graph.FilterByPrePost = Graph.getTestFilters(Graph.configuration.Render.FilterByPrePost)
 
 	if Graph.FilterByTitle != nil {
 		log.Infof("Applying title filters using %s", Graph.configuration.Render.FilterTestsByTitle)
@@ -125,6 +131,21 @@ func (Graph *GraphGenerator) Init(inConfig global.Configuration, inProducers []P
 
 	if Graph.FilterByDimension != nil {
 		log.Infof("Applying dimension filters using %s", Graph.configuration.Render.FilterByDimension)
+
+	}
+
+	if Graph.FilterByProducer != nil {
+		log.Infof("Applying Producer filters using %s", Graph.configuration.Render.FilterByProducer)
+
+	}
+
+	if Graph.FilterByVersion != nil {
+		log.Infof("Applying Version filters using %s", Graph.configuration.Render.FilterByVersion)
+
+	}
+
+	if Graph.FilterByPrePost != nil {
+		log.Infof("Applying PrePost filters using %s", Graph.configuration.Render.FilterByPrePost)
 
 	}
 
@@ -265,6 +286,22 @@ func (Graph *GraphGenerator) RenderReults() bool {
 			newCharTestData.chartItems = []chartItem{}
 			for _, producer := range Graph.producers {
 				var testResult ResultTest
+				// We filter by Prodicer name and/OR version
+				skip := 0
+				if Graph.FilterByProducer != nil {
+					if Graph.filterByCondition(producer.MySQLProducer, Graph.FilterByProducer) > 0 {
+						skip = 1
+					}
+				}
+				if Graph.FilterByVersion != nil {
+					if Graph.filterByCondition(producer.MySQLVersion, Graph.FilterByVersion) > 0 {
+						skip = 1
+					}
+				}
+
+				if skip > 0 {
+					continue
+				}
 
 				testKey := TestKey{testType.ActionType,
 					producer.TestCollectionsName,
@@ -538,11 +575,9 @@ func (Graph *GraphGenerator) PrintImages() {
 	for _, chartDataTest := range Graph.chartsData {
 		if !strings.Contains(strings.ToLower(chartDataTest.title), "warmup") {
 			//checking filters for title and dimension
-			if Graph.checkFilterTitle(chartDataTest) > 0 {
-				continue
-			}
+			skip := CheckFilters(Graph, chartDataTest)
 
-			if Graph.checkFilterDimension(chartDataTest) > 0 {
+			if skip > 0 {
 				continue
 			}
 
@@ -646,12 +681,9 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 	for _, chartDataTest := range Graph.chartsData {
 		if !strings.Contains(strings.ToLower(chartDataTest.title), "warmup") {
 
-			//checking filters for title and dimension
-			if Graph.checkFilterTitle(chartDataTest) > 0 {
-				continue
-			}
+			skip := CheckFilters(Graph, chartDataTest)
 
-			if Graph.checkFilterDimension(chartDataTest) > 0 {
+			if skip > 0 {
 				continue
 			}
 
@@ -726,6 +758,37 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 
 }
 
+func CheckFilters(Graph *GraphGenerator, chartDataTest charTest) int {
+	skip := 0
+	//checking filters for title and dimension
+	if Graph.FilterByTitle != nil {
+		if Graph.filterByCondition(chartDataTest.title, Graph.FilterByTitle) > 0 {
+			skip = 1
+		}
+	}
+
+	if Graph.FilterByDimension != nil {
+		if Graph.filterByCondition(chartDataTest.dimension, Graph.FilterByDimension) > 0 {
+			skip = 1
+		}
+	}
+
+	if Graph.FilterByPrePost != nil && chartDataTest.actionType == 0 {
+		//If the array has 2 values (pre/post) we will not filter for it
+		prePost := 0
+		if len(Graph.FilterByPrePost) < 2 {
+			if Graph.FilterByPrePost[0] == "post" {
+				prePost = 1
+			}
+
+			if Graph.filterByNumericCondition(chartDataTest.prePost, []int{prePost}) > 0 {
+				skip = 1
+			}
+		}
+	}
+	return skip
+}
+
 func (Graph *GraphGenerator) checkFilterTitle(chartDataTest charTest) int {
 	if Graph.FilterByTitle != nil {
 		skip := 1
@@ -792,11 +855,9 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 	for _, chartCSVTest := range Graph.chartsData {
 
 		//checking filters for title and dimension
-		if Graph.checkFilterTitle(chartCSVTest) > 0 {
-			continue
-		}
+		skip := CheckFilters(Graph, chartCSVTest)
 
-		if Graph.checkFilterDimension(chartCSVTest) > 0 {
+		if skip > 0 {
 			continue
 		}
 
@@ -987,4 +1048,31 @@ func (Graph *GraphGenerator) getBarStats(testResult ResultTest, inLabel string) 
 		threads = append(threads, value.ThreadNumber)
 	}
 	return threads, items
+}
+
+func (Graph *GraphGenerator) filterByCondition(in string, filters []string) int {
+	//if Graph.FilterByProducer != nil {
+	skip := 1
+	for _, filter := range filters {
+		re := regexp.MustCompile(filter)
+		match := re.FindStringSubmatch(in)
+		if len(match) > 0 {
+			skip = 0
+		}
+	}
+	return skip
+	//}
+	//return 0
+}
+func (Graph *GraphGenerator) filterByNumericCondition(in int, filters []int) int {
+	//if Graph.FilterByProducer != nil {
+	skip := 1
+	for _, filter := range filters {
+		if filter == in {
+			skip = 0
+		}
+	}
+	return skip
+	//}
+	//return 0
 }
