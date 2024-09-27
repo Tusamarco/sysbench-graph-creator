@@ -59,5 +59,7 @@ color=[
     ,"name=MySQL;version=8.0;color=#93c7ff"
     ,"name=MySQL;version=8.4;color=#f9a98a"
     ,"name=MySQL;version=9.0;color=#cc3a00"
-    ,"name=Maria;version=11.3;color=#f24500"
+    ,"name=Maria;version=11.4;color=#f24500"
+    ,"name=Source;version=9.0.1-1;color=#117e1a"
+    ,"name=Source;version=8.4;color=#ff7e1a"
 ]
