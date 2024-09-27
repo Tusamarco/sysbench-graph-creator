@@ -27,7 +27,7 @@ func main() {
 	help.Init()
 
 	//return version adn exit
-	if len(os.Args) <= 1 &&
+	if len(os.Args) == 1 &&
 		os.Args[1] == "--version" {
 		fmt.Println("Sysbench graph Creator version: ", version)
 		exitWithCode(0)
