@@ -11,11 +11,11 @@ import (
 
 var version = "0.1.0"
 
-var configFile string
-var configPath string
-var sourcePath string
-var destinationPath string
-var testName string
+//var configFile string
+//var configPath string
+//var sourcePath string
+//var destinationPath string
+//var testName string
 
 func main() {
 	const (
@@ -34,12 +34,17 @@ func main() {
 	}
 
 	//Manage config and parameters from conf file [start]
-	flag.StringVar(&configFile, "configfile", "", "Config file name for the script")
-	flag.StringVar(&configPath, "configpath", "", "Config file path")
-	flag.StringVar(&sourcePath, "sourcepath", "", "source path")
-	flag.StringVar(&destinationPath, "destinationpath", "", "destination path")
-	flag.StringVar(&params.CsvDestinationPath, "csvDestinationPath", "", "csv destination path")
+	//Mandatory from command line
+	flag.StringVar(&params.ConfigFile, "configfile", "", "Config file name for the script")
+	flag.StringVar(&params.ConfigPath, "configpath", "", "Config file path")
 
+	//mandatory (at least in config)
+	flag.StringVar(&params.SourceDataPath, "sourceDataPath", "", "source path")
+	flag.StringVar(&params.DestinationPath, "destinationPath", "", "destination path")
+	flag.StringVar(&params.CsvDestinationPath, "csvDestinationPath", "", "csv destination path")
+	flag.StringVar(&params.TestName, "testName", "", "Name of the test. IE 'Comparison MySQL 5.7 VS 8.0.38")
+
+	//optional
 	flag.StringVar(&params.FilterByProducer, "filterByProducer", "", "filter by producer(s) name, comma separated list")
 	flag.StringVar(&params.FilterByVersion, "filterByVersion", "", "filter by version(s) name, comma separated list")
 	flag.StringVar(&params.FilterByDimension, "filterByDimension", "", "filter by dimension(s) name, comma separated list")
@@ -60,17 +65,17 @@ func main() {
 	flag.Parse()
 
 	//check for current params
-	if len(os.Args) < 2 || configFile == "" {
-		fmt.Println("You must at least pass the --configfile=xxx parameter ")
+	if len(os.Args) < 2 || params.ConfigFile == "" {
+		fmt.Println("You must at least pass the --configfile=xxx and --configpath parameters ")
 		exitWithCode(1)
 	}
 	var currPath, err = os.Getwd()
 
-	if configPath != "" {
-		if configPath[len(configPath)-1:] == Separator {
-			currPath = configPath
+	if params.ConfigPath != "" {
+		if params.ConfigPath[len(params.ConfigPath)-1:] == Separator {
+			currPath = params.ConfigPath
 		} else {
-			currPath = configPath + Separator
+			currPath = params.ConfigPath + Separator
 		}
 	} else {
 		currPath = currPath + Separator + "config" + Separator
@@ -82,19 +87,22 @@ func main() {
 	}
 
 	//Return our full configuration from file
-	var config = global.GetConfig(currPath + configFile)
+	var config = global.GetConfig(currPath + params.ConfigFile)
 
 	//parameters from command line have higher priority so we parse and replace
 	config.ParseCommandLine(params)
+
+	//Sanity Checks before taking any action
+	config.SanityChecks()
+
+	//check for path and create the ones not existing
+	config.CheckPaths()
 
 	//initialize the log system
 	if !global.InitLog(config) {
 		fmt.Println("Not able to initialize log system exiting")
 		exitWithCode(1)
 	}
-
-	//commandline override config file
-	portingCommandOption(config)
 
 	//now the show begins
 	fileProc := new(DO.FileProcessor)
@@ -132,18 +140,6 @@ func main() {
 
 	exitWithCode(0)
 	//log.Debug(len(myArFiles))
-}
-
-func portingCommandOption(config global.Configuration) {
-	if sourcePath != "" {
-		config.Parser.SourceDataPath = sourcePath
-	}
-	if destinationPath != "" {
-		config.Render.DestinationPath = destinationPath
-	}
-	if testName != "" {
-		config.Global.TestName = testName
-	}
 }
 
 func exitWithCode(errorCode int) {

@@ -12,10 +12,10 @@ distanceLabel = "operations/s"
 
 [render]
 graphType="column"
-destinationPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/benchmarking_on_hetzner/results/dev"
+destinationPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/benchmarking_on_hetzner/results/pippo"
 #destinationPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base"
 #destinationPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base/logs"
-csvDestinationPath=""
+csvDestinationPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/benchmarking_on_hetzner/results/pappa"
 printStats=false
 printData=true
 convertChartsToCsv=false

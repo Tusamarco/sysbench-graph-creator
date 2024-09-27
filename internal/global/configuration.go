@@ -3,12 +3,17 @@ package Global
 import (
 	"github.com/Tusamarco/toml"
 	log "github.com/sirupsen/logrus"
+	"os"
 
 	"syscall"
 )
 
 // commandline params
 type Params struct {
+	ConfigFile         string
+	ConfigPath         string
+	SourceDataPath     string
+	DestinationPath    string
 	CsvDestinationPath string
 	FilterByProducer   string
 	FilterByVersion    string
@@ -19,6 +24,7 @@ type Params struct {
 	PrintCharts        bool
 	PrintData          bool
 	FilterByPrePost    string
+	TestName           string
 }
 
 // Global scheduler conf
@@ -96,6 +102,17 @@ func (conf *Configuration) fillDefaults() {
 
 // We assign the value coming from command line to config
 func (conf *Configuration) ParseCommandLine(params Params) {
+
+	if params.SourceDataPath != "" {
+		conf.Parser.SourceDataPath = params.SourceDataPath
+	}
+	if params.DestinationPath != "" {
+		conf.Render.DestinationPath = params.DestinationPath
+	}
+	if params.TestName != "" {
+		conf.Global.TestName = params.TestName
+	}
+
 	if params.CsvDestinationPath != "" {
 		conf.Render.CsvDestinationPath = params.CsvDestinationPath
 	}
@@ -128,6 +145,29 @@ func (conf *Configuration) ParseCommandLine(params Params) {
 	}
 	if params.FilterByPrePost != "" {
 		conf.Render.FilterByPrePost = params.FilterByPrePost
+	}
+
+}
+
+// We check paths and if not existing we will create them
+func (conf *Configuration) CheckPaths() {
+	paths := []string{conf.Render.DestinationPath, conf.Render.HtmlDestinationPath, conf.Render.CsvDestinationPath}
+	for _, path := range paths {
+		if path != "" {
+			if !CheckIfPathExists(path) {
+				CreatePath(path)
+				log.Infof("Path %s not exists. Will create", path)
+			}
+		}
+	}
+}
+
+// we perform sanity check on the incoming paramters, wew ill fix when possible exit otherwise
+func (conf *Configuration) SanityChecks() {
+
+	if !CheckIfPathExists(conf.Parser.SourceDataPath) {
+		log.Errorf("Source Path %s  does not exist cannot proceed.", conf.Parser.SourceDataPath)
+		os.Exit(1)
 	}
 
 }

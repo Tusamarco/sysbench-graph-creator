@@ -513,6 +513,11 @@ func (Graph *GraphGenerator) BuildPage() bool {
 			global.ReplaceString(Graph.testName, " ", "") + "_" + Graph.benchTool + ".html")
 		if err != nil {
 			panic(err)
+		} else {
+			log.Infof("HTML file availabel at: %s", Graph.configuration.Render.HtmlDestinationPath+"data_"+
+				global.ReplaceString(Graph.testName, " ", "")+"_"+
+				Graph.benchTool+".html")
+
 		}
 
 		pageData = components.NewPage()
@@ -532,6 +537,11 @@ func (Graph *GraphGenerator) BuildPage() bool {
 			global.ReplaceString(Graph.testName, " ", "") + "_" + Graph.benchTool + ".html")
 		if err != nil {
 			panic(err)
+		} else {
+			log.Infof("HTML STATS file availabel at: %s", Graph.configuration.Render.HtmlDestinationPath+"stats_"+
+				global.ReplaceString(Graph.testName, " ", "")+"_"+
+				Graph.benchTool+".html")
+
 		}
 
 		pageStats = components.NewPage()
@@ -565,12 +575,10 @@ func (Graph *GraphGenerator) getTestFilters(filters string) []string {
 
 func (Graph *GraphGenerator) PrintImages() {
 
-	if _, err := os.Stat(Graph.configuration.Render.HtmlDestinationPath + string(os.PathSeparator) + "images" + string(os.PathSeparator)); os.IsNotExist(err) {
-		err = os.Mkdir(Graph.configuration.Render.HtmlDestinationPath+string(os.PathSeparator)+"images", os.ModePerm)
-		if err != nil {
-			panic(err)
-		}
+	if !global.CheckIfPathExists(Graph.configuration.Render.HtmlDestinationPath + string(os.PathSeparator) + "images") {
+		global.CreatePath(Graph.configuration.Render.HtmlDestinationPath + string(os.PathSeparator) + "images")
 	}
+	log.Infof("Images available at %s", Graph.configuration.Render.HtmlDestinationPath+string(os.PathSeparator)+"images"+string(os.PathSeparator))
 
 	for _, chartDataTest := range Graph.chartsData {
 		if !strings.Contains(strings.ToLower(chartDataTest.title), "warmup") {
@@ -837,7 +845,7 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 	currentTime := time.Now()
 	csvOutputPath := Graph.configuration.Render.CsvDestinationPath
 	if !global.CheckIfPathExists(csvOutputPath) {
-		err := os.Mkdir(csvOutputPath, 0755)
+		err := os.MkdirAll(csvOutputPath, 0755)
 		if err != nil {
 			log.Errorf("Creating CSV path: %s", err.Error())
 		}
@@ -847,6 +855,8 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 	csvFile, err := os.Create(csvOutputPath + csvFileName + ".csv")
 	if err != nil {
 		log.Errorf("Creating CSV File: %s", err.Error())
+	} else {
+		log.Infof("CSV File at %s", csvOutputPath+csvFileName+".csv")
 	}
 	defer csvFile.Close()
 
