@@ -68,6 +68,7 @@ func main() {
 	//check for current params
 	if len(os.Args) < 2 || params.ConfigFile == "" {
 		fmt.Println("You must at least pass the --configfile=xxx and --configpath parameters ")
+		flag.PrintDefaults()
 		exitWithCode(1)
 	}
 	var currPath, err = os.Getwd()
