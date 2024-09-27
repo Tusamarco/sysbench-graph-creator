@@ -1064,7 +1064,7 @@ func (Graph *GraphGenerator) filterByCondition(in string, filters []string) int 
 	//if Graph.FilterByProducer != nil {
 	skip := 1
 	for _, filter := range filters {
-		re := regexp.MustCompile(filter)
+		re := regexp.MustCompile("(?i)" + filter)
 		match := re.FindStringSubmatch(in)
 		if len(match) > 0 {
 			skip = 0
