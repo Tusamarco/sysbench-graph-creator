@@ -18,13 +18,14 @@ destinationPath="D:\\work\\percona\\Tech_Lead\\Projects\\Benchmarking_procedures
 #csvDestinationPath="D:\\work\\percona\\Tech_Lead\\Projects\\Benchmarking_procedures\\benchmarking_on_hetzner\\results\\all\\csv\\small"
 csvDestinationPath=""
 printStats=false
-printData=true
+printData=false
 convertChartsToCsv=false
 printCharts=false
 
 httpServerPort=8089
 httpServerIp="localhost"
-labels="operations/s"
+labels=""
+#labels="operations/s"
 #labels="operations/s,latencyPct95(μs)"
 #labels="TotalTime,Events/s,operations/s,writes/s,reads/s,latencyPct95(μs)"
 statslabels="operations/s,latencyPct95(μs)"
@@ -36,7 +37,7 @@ filterExcludeByTitle=""
 filterByDimension=""
 filterByVersion=""
 filterByProducer=""
-FilterByPrePost=""
+filterByPrePost=""
 #filterTestsBy="select_run_range,write_run_update_no_index"
 
 chartHeight=400
