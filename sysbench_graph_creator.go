@@ -50,12 +50,14 @@ func main() {
 	flag.StringVar(&params.FilterByVersion, "filterByVersion", "", "filter by version(s) name, comma separated list")
 	flag.StringVar(&params.FilterByDimension, "filterByDimension", "", "filter by dimension(s) name, comma separated list")
 	flag.StringVar(&params.FilterByTitle, "filterByTitle", "", "filter by test name(s) name, comma separated list")
+	flag.StringVar(&params.FilterExcludeByTitle, "filterExcludeByTitle", "", "Exclude filter by test name(s) name, comma separated list. Cannot have filterByTitle and filterExcludeByTitle at the same time.")
+
 	flag.StringVar(&params.FilterByPrePost, "filterByPrePost", "", "filter by pre or post write action , comma separated list [pre|post]. Default: pre,post")
 
 	flag.StringVar(&params.Labels, "labels", "TotalTime,Events/s,operations/s,writes/s,reads/s,latencyPct95(μs)", "list of labels to use (comma separated) default: TotalTime,Events/s,operations/s,writes/s,reads/s,latencyPct95(μs)")
 	flag.BoolVar(&params.ConvertChartsToCsv, "convertCsv", false, "if to convert to csv [false|true]")
 	flag.BoolVar(&params.PrintCharts, "printCharts", false, "if to create jpeg images of the charts [false|true]")
-	flag.BoolVar(&params.PrintData, "printData", true, "if to create html file version")
+	flag.BoolVar(&params.PrintData, "printData", false, "if to create html file version")
 
 	//flag.StringVar(nil, "version", pxc_scheduler_handler_version, "version: ")
 

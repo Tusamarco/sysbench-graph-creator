@@ -60,19 +60,20 @@ const (
 //https://github.com/go-echarts/go-echarts
 
 type GraphGenerator struct {
-	configuration     global.Configuration
-	producers         []Producer
-	testName          string
-	chartsData        []charTest
-	chartsStats       []charTest
-	labels            []string
-	statLabels        []string
-	benchTool         string
-	FilterByDimension []string
-	FilterByTitle     []string
-	FilterByProducer  []string
-	FilterByVersion   []string
-	FilterByPrePost   []string
+	configuration        global.Configuration
+	producers            []Producer
+	testName             string
+	chartsData           []charTest
+	chartsStats          []charTest
+	labels               []string
+	statLabels           []string
+	benchTool            string
+	FilterByDimension    []string
+	FilterByTitle        []string
+	FilterExcludeByTitle []string
+	FilterByProducer     []string
+	FilterByVersion      []string
+	FilterByPrePost      []string
 }
 
 func (Graph *GraphGenerator) checkConfig() bool {
@@ -116,16 +117,22 @@ func (Graph *GraphGenerator) Init(inConfig global.Configuration, inProducers []P
 	Graph.checkConfig()
 	Graph.chartsData = []charTest{}
 	Graph.chartsStats = []charTest{}
-	Graph.labels = strings.Split(inConfig.Render.Labels, ",")
-	Graph.statLabels = strings.Split(inConfig.Render.StatsLabels, ",")
+	Graph.labels = strings.Split(Graph.configuration.Render.Labels, ",")
+	Graph.statLabels = strings.Split(Graph.configuration.Render.StatsLabels, ",")
 	Graph.FilterByDimension = Graph.getTestFilters(Graph.configuration.Render.FilterByDimension)
 	Graph.FilterByTitle = Graph.getTestFilters(Graph.configuration.Render.FilterTestsByTitle)
 	Graph.FilterByProducer = Graph.getTestFilters(Graph.configuration.Render.FilterByProducer)
 	Graph.FilterByVersion = Graph.getTestFilters(Graph.configuration.Render.FilterByVersion)
 	Graph.FilterByPrePost = Graph.getTestFilters(Graph.configuration.Render.FilterByPrePost)
+	Graph.FilterExcludeByTitle = Graph.getTestFilters(Graph.configuration.Render.FilterExcludeByTitle)
 
 	if Graph.FilterByTitle != nil {
 		log.Infof("Applying title filters using %s", Graph.configuration.Render.FilterTestsByTitle)
+
+	}
+
+	if Graph.FilterExcludeByTitle != nil {
+		log.Infof("Applying Excluding title filters using %s", Graph.configuration.Render.FilterExcludeByTitle)
 
 	}
 
@@ -583,7 +590,7 @@ func (Graph *GraphGenerator) PrintImages() {
 	for _, chartDataTest := range Graph.chartsData {
 		if !strings.Contains(strings.ToLower(chartDataTest.title), "warmup") {
 			//checking filters for title and dimension
-			skip := CheckFilters(Graph, chartDataTest)
+			skip := checkFilters(Graph, chartDataTest)
 
 			if skip > 0 {
 				continue
@@ -689,7 +696,7 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 	for _, chartDataTest := range Graph.chartsData {
 		if !strings.Contains(strings.ToLower(chartDataTest.title), "warmup") {
 
-			skip := CheckFilters(Graph, chartDataTest)
+			skip := checkFilters(Graph, chartDataTest)
 
 			if skip > 0 {
 				continue
@@ -766,11 +773,19 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 
 }
 
-func CheckFilters(Graph *GraphGenerator, chartDataTest charTest) int {
+func checkFilters(Graph *GraphGenerator, chartDataTest charTest) int {
 	skip := 0
 	//checking filters for title and dimension
 	if Graph.FilterByTitle != nil {
 		if Graph.filterByCondition(chartDataTest.title, Graph.FilterByTitle) > 0 {
+			skip = 1
+		}
+	}
+
+	if Graph.FilterExcludeByTitle != nil {
+		if Graph.filterByCondition(chartDataTest.title, Graph.FilterExcludeByTitle) > 0 {
+			skip = 0
+		} else {
 			skip = 1
 		}
 	}
@@ -797,35 +812,35 @@ func CheckFilters(Graph *GraphGenerator, chartDataTest charTest) int {
 	return skip
 }
 
-func (Graph *GraphGenerator) checkFilterTitle(chartDataTest charTest) int {
-	if Graph.FilterByTitle != nil {
-		skip := 1
-		for _, filter := range Graph.FilterByTitle {
-			re := regexp.MustCompile(filter)
-			match := re.FindStringSubmatch(chartDataTest.title)
-			if len(match) > 0 {
-				skip = 0
-			}
-		}
-		return skip
-	}
-	return 0
-}
-
-func (Graph *GraphGenerator) checkFilterDimension(chartDataTest charTest) int {
-	if Graph.FilterByDimension != nil {
-		skip := 1
-		for _, filter := range Graph.FilterByDimension {
-			re := regexp.MustCompile(filter)
-			match := re.FindStringSubmatch(chartDataTest.dimension)
-			if len(match) > 0 {
-				skip = 0
-			}
-		}
-		return skip
-	}
-	return 0
-}
+//func (Graph *GraphGenerator) checkFilterTitle(chartDataTest charTest) int {
+//	if Graph.FilterByTitle != nil {
+//		skip := 1
+//		for _, filter := range Graph.FilterByTitle {
+//			re := regexp.MustCompile(filter)
+//			match := re.FindStringSubmatch(chartDataTest.title)
+//			if len(match) > 0 {
+//				skip = 0
+//			}
+//		}
+//		return skip
+//	}
+//	return 0
+//}
+//
+//func (Graph *GraphGenerator) checkFilterDimension(chartDataTest charTest) int {
+//	if Graph.FilterByDimension != nil {
+//		skip := 1
+//		for _, filter := range Graph.FilterByDimension {
+//			re := regexp.MustCompile(filter)
+//			match := re.FindStringSubmatch(chartDataTest.dimension)
+//			if len(match) > 0 {
+//				skip = 0
+//			}
+//		}
+//		return skip
+//	}
+//	return 0
+//}
 
 /*
 Here we will export each chart as a csv set  where the output should be like
@@ -865,7 +880,7 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 	for _, chartCSVTest := range Graph.chartsData {
 
 		//checking filters for title and dimension
-		skip := CheckFilters(Graph, chartCSVTest)
+		skip := checkFilters(Graph, chartCSVTest)
 
 		if skip > 0 {
 			continue
@@ -942,7 +957,7 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 				} else {
 					lineBuffer.WriteString(",")
 				}
-				for ip := 0; ip < (chartCSVTest.numProviders + 1); ip++ {
+				for ip := 0; ip < (len(providers) + 1); ip++ {
 					lineBuffer.WriteString(fmt.Sprintf("%v,", csvData.data[i][ip]))
 				}
 				lineBuffer.WriteString(",")
@@ -970,11 +985,9 @@ func (Graph *GraphGenerator) addStatsToPage(page *components.Page) {
 		if !strings.Contains(strings.ToLower(chartStatTest.title), "warmup") {
 
 			//checking filters for title and dimension
-			if Graph.checkFilterTitle(chartStatTest) > 0 {
-				continue
-			}
+			skip := checkFilters(Graph, chartStatTest)
 
-			if Graph.checkFilterDimension(chartStatTest) > 0 {
+			if skip > 0 {
 				continue
 			}
 

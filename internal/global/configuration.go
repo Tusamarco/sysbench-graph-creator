@@ -10,21 +10,22 @@ import (
 
 // commandline params
 type Params struct {
-	ConfigFile         string
-	ConfigPath         string
-	SourceDataPath     string
-	DestinationPath    string
-	CsvDestinationPath string
-	FilterByProducer   string
-	FilterByVersion    string
-	FilterByDimension  string
-	FilterByTitle      string
-	Labels             string
-	ConvertChartsToCsv bool
-	PrintCharts        bool
-	PrintData          bool
-	FilterByPrePost    string
-	TestName           string
+	ConfigFile           string
+	ConfigPath           string
+	SourceDataPath       string
+	DestinationPath      string
+	CsvDestinationPath   string
+	FilterByProducer     string
+	FilterByVersion      string
+	FilterByDimension    string
+	FilterByTitle        string
+	FilterExcludeByTitle string
+	Labels               string
+	ConvertChartsToCsv   bool
+	PrintCharts          bool
+	PrintData            bool
+	FilterByPrePost      string
+	TestName             string
 }
 
 // Global scheduler conf
@@ -47,28 +48,29 @@ type Color struct {
 }
 
 type Render struct {
-	GraphType           string `toml:graphType`
-	DestinationPath     string `toml:destinationPath`
-	PrintStats          bool   `toml:printStats`
-	PrintData           bool   `toml:printData`
-	HttpServerPort      int    `toml:httpServerPort`
-	HttpServerIp        string `toml:httpServerIp`
-	Labels              string `toml:labels`
-	StatsLabels         string `toml:statslabels`
-	ReadSummaryLabel    string `toml:readSummaryLabel`
-	WriteSummaryLabel   string `toml:writeSummaryLabel`
-	ChartHeight         int    `toml:chartHeight`
-	ChartWidth          int    `toml:chartWidth`
-	PrintCharts         bool   `toml:printCharts`
-	PrintChartsFormat   string `toml:printChartsFormat`
-	ConvertChartsToCsv  bool   `toml:convertChartsToCsv`
-	CsvDestinationPath  string `toml:csvDestinationPath`
-	HtmlDestinationPath string
-	FilterTestsByTitle  string `toml:filterTestsByTitle`
-	FilterByDimension   string `toml:filterByDimension`
-	FilterByVersion     string `toml:filterByVersion`
-	FilterByProducer    string `toml:filterByProducer`
-	FilterByPrePost     string `toml:filterByPrePost`
+	GraphType            string `toml:graphType`
+	DestinationPath      string `toml:destinationPath`
+	PrintStats           bool   `toml:printStats`
+	PrintData            bool   `toml:printData`
+	HttpServerPort       int    `toml:httpServerPort`
+	HttpServerIp         string `toml:httpServerIp`
+	Labels               string `toml:labels`
+	StatsLabels          string `toml:statslabels`
+	ReadSummaryLabel     string `toml:readSummaryLabel`
+	WriteSummaryLabel    string `toml:writeSummaryLabel`
+	ChartHeight          int    `toml:chartHeight`
+	ChartWidth           int    `toml:chartWidth`
+	PrintCharts          bool   `toml:printCharts`
+	PrintChartsFormat    string `toml:printChartsFormat`
+	ConvertChartsToCsv   bool   `toml:convertChartsToCsv`
+	CsvDestinationPath   string `toml:csvDestinationPath`
+	HtmlDestinationPath  string
+	FilterTestsByTitle   string `toml:filterTestsByTitle`
+	FilterByDimension    string `toml:filterByDimension`
+	FilterByVersion      string `toml:filterByVersion`
+	FilterByProducer     string `toml:filterByProducer`
+	FilterByPrePost      string `toml:filterByPrePost`
+	FilterExcludeByTitle string `toml:filterExcludeByTitle`
 }
 
 // Main structure working as container for the configuration sections
@@ -140,6 +142,11 @@ func (conf *Configuration) ParseCommandLine(params Params) {
 	if params.FilterByTitle != "" {
 		conf.Render.FilterTestsByTitle = params.FilterByTitle
 	}
+
+	if params.FilterExcludeByTitle != "" {
+		conf.Render.FilterExcludeByTitle = params.FilterExcludeByTitle
+	}
+
 	if params.FilterByDimension != "" {
 		conf.Render.FilterByDimension = params.FilterByDimension
 	}
@@ -168,6 +175,11 @@ func (conf *Configuration) SanityChecks() {
 	if !CheckIfPathExists(conf.Parser.SourceDataPath) {
 		log.Errorf("Source Path %s  does not exist cannot proceed.", conf.Parser.SourceDataPath)
 		os.Exit(1)
+	}
+
+	if conf.Render.FilterTestsByTitle != "" && conf.Render.FilterExcludeByTitle != "" {
+		log.Warnf("Cannot use Filter Test by title and Filter Exclude by title at the same time, FilterExcludeByTitle will be disabled")
+		conf.Render.FilterExcludeByTitle = ""
 	}
 
 }
