@@ -1,6 +1,7 @@
 #v.0.1.0
 [parser]
-sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/benchmarking_on_hetzner/archive_original/sysbench"
+#sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/benchmarking_on_hetzner/archive_original/sysbench"
+sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/benchmarking_on_hetzner/report_data/sysbench_report"
 #sourceDataPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base/logs"
 #sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/for_report/PS_VS_MYS_8036_optimized/logs" #MY-PS-8034-BASE
 
@@ -18,7 +19,7 @@ destinationPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_p
 csvDestinationPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/benchmarking_on_hetzner/results/pappa/"
 printStats=false
 printCharts=false
-printData=true
+printData=false
 convertChartsToCsv=true
 
 
@@ -34,9 +35,9 @@ writeSummaryLabel="writes/s"
 filterTestsByTitle=""
 filterExcludeByTitle=""
 filterByDimension=""
-filterByVersion=""
+filterByVersion="8.0.37"
 filterByProducer=""
-filterByPrePost=""
+filterByPrePost="post"
 #filterTestsBy="select_run_range,write_run_update_no_index"
 #filterByDimension="small,large"
 
