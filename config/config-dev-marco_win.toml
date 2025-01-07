@@ -1,6 +1,6 @@
 #v.0.1.0
 [parser]
-sourceDataPath="D:\\work\\percona\\Tech_Lead\\Projects\\Benchmarking_procedures\\benchmarking_on_hetzner\\report_data\\sysbench"
+sourceDataPath="D:\\work\\percona\\Tech_Lead\\Projects\\Benchmarking_procedures\\benchmark_exercise_december_2024_q1_2025\\results"
 #sourceDataPath="D:\\work\\blogs\\2024\\sakila_where_are_you_going\\sysbench\\base\\logs\\onlymysql"
 #sourceDataPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base/logs"
 #sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/for_report/PS_VS_MYS_8036_optimized/logs" #MY-PS-8034-BASE
@@ -11,21 +11,21 @@ distanceLabel = "operations/s"
 
 [render]
 graphType="column"
-destinationPath="D:\\work\\percona\\Tech_Lead\\Projects\\Benchmarking_procedures\\benchmarking_on_hetzner\\results\\only_mysql\\sysbench"
+destinationPath="D:\\work\\percona\\Tech_Lead\\Projects\\Benchmarking_procedures\\benchmark_exercise_december_2024_q1_2025\\results\\compare-blade-thebeast"
 #destinationPath="D:\\work\\blogs\\2024\\sakila_where_are_you_going\\sysbench\\base\\"
 #destinationPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base"
 #destinationPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base/logs"
 #csvDestinationPath="D:\\work\\percona\\Tech_Lead\\Projects\\Benchmarking_procedures\\benchmarking_on_hetzner\\results\\all\\csv\\small"
 csvDestinationPath=""
 printStats=false
-printData=false
+printData=true
 convertChartsToCsv=false
 printCharts=false
 
 httpServerPort=8089
 httpServerIp="localhost"
-labels=""
-#labels="operations/s"
+#labels=""
+labels="operations/s"
 #labels="operations/s,latencyPct95(μs)"
 #labels="TotalTime,Events/s,operations/s,writes/s,reads/s,latencyPct95(μs)"
 statslabels="operations/s,latencyPct95(μs)"
@@ -47,7 +47,7 @@ printChartsFormat="jpeg"
 
 [global]
 testName="Comparing MySQL Versions 5.7 to 9.0"
-logLevel = "info"
+logLevel = "debug"
 logTarget = "stdout" #stdout | file
 logFile = "/Users/marcotusa/tmp/sysbench_graph_creator.log"
 

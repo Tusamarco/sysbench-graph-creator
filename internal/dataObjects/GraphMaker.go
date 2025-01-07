@@ -8,6 +8,7 @@ import (
 	"github.com/go-echarts/go-echarts/v2/opts"
 	log "github.com/sirupsen/logrus"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -484,12 +485,21 @@ func (Graph *GraphGenerator) getBarData(testResult ResultTest, inLabel string) (
 	}
 	items := make([]opts.BarData, 0)
 	for _, value := range values {
+		/* It could happen that the test is not able to process the load, in this case Value will be NaN.
+		   But NaN is not processed by the render, because this it is my arbitrary decision to set the value to 0
+		   when we have NaN
+		*/
+		if math.IsNaN(value.Value) {
+			value.Value = 0
+			value.STD = 0
+		}
 		items = append(items, opts.BarData{Value: value.Value, Name: value.Label})
 		threads = append(threads, value.ThreadNumber)
 	}
 	return threads, items
 }
 
+// I Parse the all grabbed collection (labels) and return only the one requested
 func (Graph *GraphGenerator) getLineData(testResult ResultTest, inLabel string) ([]int, []opts.LineData) {
 	values := []ResultValue{}
 	threads := []int{}
@@ -502,6 +512,14 @@ func (Graph *GraphGenerator) getLineData(testResult ResultTest, inLabel string) 
 	}
 	items := make([]opts.LineData, 0)
 	for _, value := range values {
+		/* It could happen that the test is not able to process the load, in this case Value will be NaN.
+		   But NaN is not processed by the render, because this it is my arbitrary decision to set the value to 0
+		   when we have NaN
+		*/
+		if math.IsNaN(value.Value) {
+			value.Value = 0
+			value.STD = 0
+		}
 		items = append(items, opts.LineData{Value: value.Value, Name: value.Label})
 		threads = append(threads, value.ThreadNumber)
 	}
