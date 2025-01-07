@@ -51,7 +51,6 @@ logLevel = "info"
 logTarget = "stdout" #stdout | file
 logFile = "/Users/marcotusa/tmp/sysbench_graph_creator.log"
 
-[colors]
 color=[
     "name=Percona;version=8.0;color=#0e1a53"
     ,"name=Percona;version=9.0;color=#117e1a"
@@ -64,4 +63,5 @@ color=[
     ,"name=Maria;version=11.4;color=#f24500"
     ,"name=Source;version=9.0.1-1;color=#1aff41"
     ,"name=Source;version=8.4;color=#1a9bff"
+    ,"name=Thebeast;version=8.0;color=#93c7ff"
 ]
