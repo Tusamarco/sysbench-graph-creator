@@ -6,6 +6,7 @@ import (
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/components"
 	"github.com/go-echarts/go-echarts/v2/opts"
+	"github.com/go-echarts/snapshot-chromedp/render"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"math"
@@ -24,6 +25,7 @@ import (
 type chartItem struct {
 	label    string
 	provider string
+	producer string
 	order    int
 	axis     int
 	dataBar  []opts.BarData
@@ -348,6 +350,7 @@ func (Graph *GraphGenerator) RenderReults() bool {
 							newCharItem.order = idx + 1
 							newCharItem.label = label
 							newCharItem.provider = producer.MySQLProducer + producer.MySQLVersion + producer.TestCollectionsName
+							newCharItem.producer = producer.MySQLProducer + " " + producer.MySQLVersion
 							newCharItem.color = producer.Color
 							newCharItem.labelX = XAXISLABELDEFAULT
 							newCharItem.labelY = label
@@ -629,14 +632,23 @@ func (Graph *GraphGenerator) PrintImages() {
 				bar := charts.NewLine()
 				//}
 
-				titleFull := global.ReplaceString(chartDataTest.title, "_", " ") + " " + chartDataTest.dimension
-				if chartDataTest.prePost == 0 {
-					titleFull += " Pre Writes"
+				titleFull := ""
+				// In case of TPCC tests we do not add all the additional info
+				if strings.Contains(chartDataTest.title, "tpcc") || strings.Contains(chartDataTest.title, "write") {
+					titleFull = global.ReplaceString(chartDataTest.title, "_", " ")
 				} else {
-					titleFull += " Post Writes"
+					titleFull = global.ReplaceString(chartDataTest.title, "_", " ") + " " + chartDataTest.dimension
+
+					if chartDataTest.prePost == 0 {
+						titleFull += " Ordered data"
+					} else {
+						titleFull += " Unordered data"
+					}
+
+					titleFull = titleFull + " " + labelReference
+
 				}
 
-				titleFull = titleFull + "_" + labelReference
 				image = image + global.ReplaceString(titleFull, "[\\s\\/%\\(\\)]", "_") + ".jpg"
 				//image = image + global.ReplaceString(titleFull, "__", "_") + ".jpg"
 
@@ -668,7 +680,7 @@ func (Graph *GraphGenerator) PrintImages() {
 				for _, chartItemInstance := range chartDataTest.chartItems {
 					if chartItemInstance.label == labelReference {
 						//log.Debugf("Len items dataBar %d  test %s label %s", len(chartItemInstance.dataBar), chartDataTest.title, chartItemInstance.label)
-						bar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.provider, chartItemInstance.dataLine,
+						bar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.producer, chartItemInstance.dataLine,
 							charts.WithLineStyleOpts(opts.LineStyle{Color: chartItemInstance.color}),
 							charts.WithItemStyleOpts(opts.ItemStyle{Color: chartItemInstance.color}))
 					}
@@ -678,16 +690,18 @@ func (Graph *GraphGenerator) PrintImages() {
 				suffix := filepath.Ext(file)[1:]
 				fileName := file[0 : len(file)-len(suffix)-1]
 
-				config := &SnapshotConfig{
-					RenderContent: bar.RenderContent(),
-					Path:          path,
-					FileName:      fileName,
-					Suffix:        suffix,
-					Quality:       1,
-					KeepHtml:      false,
-				}
-
-				errImage := MakeSnapshot(config)
+				errImage := render.MakeChartSnapshot(bar.RenderContent(), path+fileName+"."+suffix)
+				//
+				//config := &SnapshotConfig{
+				//	RenderContent: bar.RenderContent(),
+				//	Path:          path,
+				//	FileName:      fileName,
+				//	Suffix:        suffix,
+				//	Quality:       1,
+				//	KeepHtml:      false,
+				//}
+				//
+				//errImage := MakeSnapshot(config)
 				if errImage != nil {
 					log.Errorf("Error printing image %s", image)
 				} else {
@@ -733,16 +747,26 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 
 				bar := charts.NewLine()
 
-				titleFull := global.ReplaceString(chartDataTest.title, "_", " ") + " " + chartDataTest.dimension
-				if strings.Contains(labelReference, "latencyPct95(μs)") {
-					titleFull += " (Lower is better)"
+				titleFull := ""
+				// In case of TPCC tests we do not add all the additional info
+				if strings.Contains(chartDataTest.title, "tpcc") || strings.Contains(chartDataTest.title, "write") {
+					titleFull = global.ReplaceString(chartDataTest.title, "_", " ")
+				} else {
+					titleFull = global.ReplaceString(chartDataTest.title, "_", " ") + " " + chartDataTest.dimension
+
+					if chartDataTest.prePost == 0 {
+						titleFull += " Ordered data"
+					} else {
+						titleFull += " Unordered data"
+					}
+
+					if strings.Contains(labelReference, "latencyPct95(μs)") {
+						titleFull += " (Lower is better)"
+					}
+					titleFull = titleFull + " " + labelReference
+
 				}
 
-				if chartDataTest.prePost == 0 {
-					titleFull += " Pre Writes"
-				} else {
-					titleFull += " Post Writes"
-				}
 				//general
 
 				bar.SetGlobalOptions(
@@ -774,7 +798,7 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 				for _, chartItemInstance := range chartDataTest.chartItems {
 					if chartItemInstance.label == labelReference {
 						//log.Debugf("Len items dataBar %d  test %s label %s", len(chartItemInstance.dataBar), chartDataTest.title, chartItemInstance.label)
-						bar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.provider, chartItemInstance.dataLine,
+						bar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.producer, chartItemInstance.dataLine,
 							charts.WithLineStyleOpts(opts.LineStyle{Color: chartItemInstance.color}),
 							charts.WithItemStyleOpts(opts.ItemStyle{Color: chartItemInstance.color}))
 					}
@@ -952,7 +976,7 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 						myCsvLabel := csvLabels[label]
 						csvData := myCsvLabel.data
 
-						csvData[0][providerPosition] = strings.ReplaceAll(provider, ",", "")
+						csvData[0][providerPosition] = strings.ReplaceAll(chart.producer, ",", "")
 
 						for i := 0; i < len(chart.dataLine); i++ {
 							csvData[i+1][providerPosition] = fmt.Sprintf("%v", chart.dataLine[i].Value)
@@ -1024,9 +1048,9 @@ func (Graph *GraphGenerator) addStatsToPage(page *components.Page) {
 
 				titleFull := global.ReplaceString(chartStatTest.title, "_", " ") + " " + chartStatTest.dimension
 				if chartStatTest.prePost == 0 {
-					titleFull += " Pre Writes"
+					titleFull += " Ordered Data"
 				} else {
-					titleFull += " Post Writes"
+					titleFull += " Unordered Data"
 				}
 				//general
 
