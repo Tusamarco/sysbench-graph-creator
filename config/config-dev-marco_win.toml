@@ -44,7 +44,7 @@ filterByPrePost=""
 chartHeight=400
 chartWidth=800
 printChartsFormat="jpeg"
-
+printChartsQuality = 10
 
 [global]
 testName="Comparing MySQL Versions 5.7 to 9.0"

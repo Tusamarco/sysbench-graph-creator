@@ -62,6 +62,7 @@ type Render struct {
 	ChartWidth           int    `toml:chartWidth`
 	PrintCharts          bool   `toml:printCharts`
 	PrintChartsFormat    string `toml:printChartsFormat`
+	PrintChartsQuality   int    `toml:printChartsQuality`
 	ConvertChartsToCsv   bool   `toml:convertChartsToCsv`
 	CsvDestinationPath   string `toml:csvDestinationPath`
 	HtmlDestinationPath  string

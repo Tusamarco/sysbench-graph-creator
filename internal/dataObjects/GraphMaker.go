@@ -690,17 +690,38 @@ func (Graph *GraphGenerator) PrintImages() {
 				suffix := filepath.Ext(file)[1:]
 				fileName := file[0 : len(file)-len(suffix)-1]
 
-				errImage := render.MakeChartSnapshot(bar.RenderContent(), path+fileName+"."+suffix)
+				//errImage := render.MakeChartSnapshot(bar.RenderContent(), path+fileName+"."+suffix)
 				//
 				//config := &SnapshotConfig{
 				//	RenderContent: bar.RenderContent(),
 				//	Path:          path,
 				//	FileName:      fileName,
 				//	Suffix:        suffix,
-				//	Quality:       1,
+				//	Quality:       100,
 				//	KeepHtml:      false,
 				//}
-				//
+
+				//config := render.SnapshotConfig{
+				//	RenderContent: bar.RenderContent(),
+				//	Path:          path,
+				//	FileName:      fileName,
+				//	Suffix:        suffix,
+				//	Quality:       100,
+				//	KeepHtml:      false,
+				//}
+				quality := Graph.configuration.Render.PrintChartsQuality
+				if quality < 1 || quality > 10 {
+					quality = 1
+				}
+
+				errImage := render.MakeSnapshot(
+					render.NewSnapshotConfig(
+						bar.RenderContent(),
+						path+fileName+"."+suffix,
+						func(config *render.SnapshotConfig) { config.Quality = quality }))
+
+				//errImage := render.MakeSnapshot(config)
+
 				//errImage := MakeSnapshot(config)
 				if errImage != nil {
 					log.Errorf("Error printing image %s", image)
