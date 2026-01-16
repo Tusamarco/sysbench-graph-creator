@@ -44,7 +44,7 @@ filterByPrePost="post"
 chartHeight=700
 chartWidth=1200
 printChartsFormat="jpeg"
-printChartsQuality = 10
+printChartsQuality = 5
 
 [global]
 testName="Comparing PS VS MySQL"
