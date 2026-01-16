@@ -18,6 +18,7 @@
 package Global
 
 import (
+	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/text/language"
@@ -292,10 +293,17 @@ func (o *OrderedPerfMap) Iterator() func() (*int, *string, PerfObject) {
 }
 
 func CheckIfPathExists(path string) bool {
-	if _, err := os.Stat(path); !os.IsNotExist(err) {
-		return true
+	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+		return false
 	}
-	return false
+	return true
+}
+
+func CreatePath(path string) {
+	err := os.MkdirAll(path, os.ModePerm)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 //=======

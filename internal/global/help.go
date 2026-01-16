@@ -17,7 +17,9 @@
 
 package Global
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type HelpText struct {
 	inParams  [2]string
@@ -34,9 +36,11 @@ func (help *HelpText) PrintLicense() {
 
 func (help *HelpText) GetHelpText() string {
 	helpText := `sysbench_graph_creator
+    
 
 Parameters for the executable --configfile <file name> --configpath <full path> --help
 
 `
+
 	return helpText
 }

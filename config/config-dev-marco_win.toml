@@ -1,33 +1,34 @@
 #v.0.1.0
 [parser]
-#sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/benchmarking_on_hetzner/archive_original/sysbench"
-sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/benchmarking_on_hetzner/report_data/sysbench_report"
+sourceDataPath="D:\\work\\percona\\Tech_Lead\\Projects\\Benchmarking_procedures\\Results_archive\\joins"
+#sourceDataPath="D:\\work\\blogs\\2024\\sakila_where_are_you_going\\sysbench\\base\\logs\\onlymysql"
 #sourceDataPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base/logs"
 #sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/for_report/PS_VS_MYS_8036_optimized/logs" #MY-PS-8034-BASE
-
 
 #sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/not_processed/sysbench/MY-PS-8034-NO-AHI"
 filterOutliners = true
 distanceLabel = "operations/s"
 
-
 [render]
 graphType="column"
-destinationPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/benchmarking_on_hetzner/results/pippo"
+destinationPath="D:\\work\\percona\\Tech_Lead\\Projects\\Benchmarking_procedures\\Results_archive\\output_joins"
+#destinationPath="D:\\work\\blogs\\2024\\sakila_where_are_you_going\\sysbench\\base\\"
 #destinationPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base"
 #destinationPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base/logs"
-csvDestinationPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/benchmarking_on_hetzner/results/pappa/"
+#csvDestinationPath="D:\\work\\percona\\Tech_Lead\\Projects\\Benchmarking_procedures\\benchmarking_on_hetzner\\results\\all\\csv\\small"
+csvDestinationPath=""
 printStats=false
+printData=true
+convertChartsToCsv=false
 printCharts=false
-printData=false
-convertChartsToCsv=true
-
 
 httpServerPort=8089
 httpServerIp="localhost"
-#labels="operations/s"
+#labels=""
+#labels="TotalTime"
 #labels="operations/s,latencyPct95(μs)"
-labels="TotalTime,Events/s,operations/s,writes/s,reads/s,latencyPct95(μs)"
+#labels="latencyPct95(μs),Latency(ms) min, Latency(ms) max, Latency(ms) avg, Latency(ms) sum"
+#labels="TotalTime,Events/s,operations/s,writes/s,reads/s,latencyPct95(μs)"
 statslabels="operations/s,latencyPct95(μs)"
 readSummaryLabel="reads/s"
 writeSummaryLabel="writes/s"
@@ -35,11 +36,10 @@ writeSummaryLabel="writes/s"
 filterTestsByTitle=""
 filterExcludeByTitle=""
 filterByDimension=""
-filterByVersion="8.0.37"
+filterByVersion=""
 filterByProducer=""
-filterByPrePost="post"
+filterByPrePost=""
 #filterTestsBy="select_run_range,write_run_update_no_index"
-#filterByDimension="small,large"
 
 chartHeight=700
 chartWidth=1200
@@ -47,7 +47,7 @@ printChartsFormat="jpeg"
 printChartsQuality = 5
 
 [global]
-testName="Comparing PS VS MySQL"
+testName="Test Join"
 logLevel = "info"
 logTarget = "stdout" #stdout | file
 logFile = "/Users/marcotusa/tmp/sysbench_graph_creator.log"
