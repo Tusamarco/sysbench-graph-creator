@@ -6,11 +6,14 @@ import (
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/components"
 	"github.com/go-echarts/go-echarts/v2/opts"
+	"github.com/go-echarts/snapshot-chromedp/render"
 	log "github.com/sirupsen/logrus"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"sort"
 	"strconv"
@@ -22,6 +25,7 @@ import (
 type chartItem struct {
 	label    string
 	provider string
+	producer string
 	order    int
 	axis     int
 	dataBar  []opts.BarData
@@ -59,14 +63,20 @@ const (
 //https://github.com/go-echarts/go-echarts
 
 type GraphGenerator struct {
-	configuration global.Configuration
-	producers     []Producer
-	testName      string
-	chartsData    []charTest
-	chartsStats   []charTest
-	labels        []string
-	statLabels    []string
-	benchTool     string
+	configuration        global.Configuration
+	producers            []Producer
+	testName             string
+	chartsData           []charTest
+	chartsStats          []charTest
+	labels               []string
+	statLabels           []string
+	benchTool            string
+	FilterByDimension    []string
+	FilterByTitle        []string
+	FilterExcludeByTitle []string
+	FilterByProducer     []string
+	FilterByVersion      []string
+	FilterByPrePost      []string
 }
 
 func (Graph *GraphGenerator) checkConfig() bool {
@@ -110,8 +120,44 @@ func (Graph *GraphGenerator) Init(inConfig global.Configuration, inProducers []P
 	Graph.checkConfig()
 	Graph.chartsData = []charTest{}
 	Graph.chartsStats = []charTest{}
-	Graph.labels = strings.Split(inConfig.Render.Labels, ",")
-	Graph.statLabels = strings.Split(inConfig.Render.StatsLabels, ",")
+	Graph.labels = strings.Split(Graph.configuration.Render.Labels, ",")
+	Graph.statLabels = strings.Split(Graph.configuration.Render.StatsLabels, ",")
+	Graph.FilterByDimension = Graph.getTestFilters(Graph.configuration.Render.FilterByDimension)
+	Graph.FilterByTitle = Graph.getTestFilters(Graph.configuration.Render.FilterTestsByTitle)
+	Graph.FilterByProducer = Graph.getTestFilters(Graph.configuration.Render.FilterByProducer)
+	Graph.FilterByVersion = Graph.getTestFilters(Graph.configuration.Render.FilterByVersion)
+	Graph.FilterByPrePost = Graph.getTestFilters(Graph.configuration.Render.FilterByPrePost)
+	Graph.FilterExcludeByTitle = Graph.getTestFilters(Graph.configuration.Render.FilterExcludeByTitle)
+
+	if Graph.FilterByTitle != nil {
+		log.Infof("Applying title filters using %s", Graph.configuration.Render.FilterTestsByTitle)
+
+	}
+
+	if Graph.FilterExcludeByTitle != nil {
+		log.Infof("Applying Excluding title filters using %s", Graph.configuration.Render.FilterExcludeByTitle)
+
+	}
+
+	if Graph.FilterByDimension != nil {
+		log.Infof("Applying dimension filters using %s", Graph.configuration.Render.FilterByDimension)
+
+	}
+
+	if Graph.FilterByProducer != nil {
+		log.Infof("Applying Producer filters using %s", Graph.configuration.Render.FilterByProducer)
+
+	}
+
+	if Graph.FilterByVersion != nil {
+		log.Infof("Applying Version filters using %s", Graph.configuration.Render.FilterByVersion)
+
+	}
+
+	if Graph.FilterByPrePost != nil {
+		log.Infof("Applying PrePost filters using %s", Graph.configuration.Render.FilterByPrePost)
+
+	}
 
 }
 
@@ -250,6 +296,22 @@ func (Graph *GraphGenerator) RenderReults() bool {
 			newCharTestData.chartItems = []chartItem{}
 			for _, producer := range Graph.producers {
 				var testResult ResultTest
+				// We filter by Prodicer name and/OR version
+				skip := 0
+				if Graph.FilterByProducer != nil {
+					if Graph.filterByCondition(producer.MySQLProducer, Graph.FilterByProducer) > 0 {
+						skip = 1
+					}
+				}
+				if Graph.FilterByVersion != nil {
+					if Graph.filterByCondition(producer.MySQLVersion, Graph.FilterByVersion) > 0 {
+						skip = 1
+					}
+				}
+
+				if skip > 0 {
+					continue
+				}
 
 				testKey := TestKey{testType.ActionType,
 					producer.TestCollectionsName,
@@ -288,6 +350,7 @@ func (Graph *GraphGenerator) RenderReults() bool {
 							newCharItem.order = idx + 1
 							newCharItem.label = label
 							newCharItem.provider = producer.MySQLProducer + producer.MySQLVersion + producer.TestCollectionsName
+							newCharItem.producer = producer.MySQLProducer + " " + producer.MySQLVersion
 							newCharItem.color = producer.Color
 							newCharItem.labelX = XAXISLABELDEFAULT
 							newCharItem.labelY = label
@@ -425,12 +488,21 @@ func (Graph *GraphGenerator) getBarData(testResult ResultTest, inLabel string) (
 	}
 	items := make([]opts.BarData, 0)
 	for _, value := range values {
+		/* It could happen that the test is not able to process the load, in this case Value will be NaN.
+		   But NaN is not processed by the render, because this it is my arbitrary decision to set the value to 0
+		   when we have NaN
+		*/
+		if math.IsNaN(value.Value) {
+			value.Value = 0
+			value.STD = 0
+		}
 		items = append(items, opts.BarData{Value: value.Value, Name: value.Label})
 		threads = append(threads, value.ThreadNumber)
 	}
 	return threads, items
 }
 
+// I Parse the all grabbed collection (labels) and return only the one requested
 func (Graph *GraphGenerator) getLineData(testResult ResultTest, inLabel string) ([]int, []opts.LineData) {
 	values := []ResultValue{}
 	threads := []int{}
@@ -443,6 +515,14 @@ func (Graph *GraphGenerator) getLineData(testResult ResultTest, inLabel string) 
 	}
 	items := make([]opts.LineData, 0)
 	for _, value := range values {
+		/* It could happen that the test is not able to process the load, in this case Value will be NaN.
+		   But NaN is not processed by the render, because this it is my arbitrary decision to set the value to 0
+		   when we have NaN
+		*/
+		if math.IsNaN(value.Value) {
+			value.Value = 0
+			value.STD = 0
+		}
 		items = append(items, opts.LineData{Value: value.Value, Name: value.Label})
 		threads = append(threads, value.ThreadNumber)
 	}
@@ -461,6 +541,11 @@ func (Graph *GraphGenerator) BuildPage() bool {
 			global.ReplaceString(Graph.testName, " ", "") + "_" + Graph.benchTool + ".html")
 		if err != nil {
 			panic(err)
+		} else {
+			log.Infof("HTML file availabel at: %s", Graph.configuration.Render.HtmlDestinationPath+"data_"+
+				global.ReplaceString(Graph.testName, " ", "")+"_"+
+				Graph.benchTool+".html")
+
 		}
 
 		pageData = components.NewPage()
@@ -480,6 +565,11 @@ func (Graph *GraphGenerator) BuildPage() bool {
 			global.ReplaceString(Graph.testName, " ", "") + "_" + Graph.benchTool + ".html")
 		if err != nil {
 			panic(err)
+		} else {
+			log.Infof("HTML STATS file availabel at: %s", Graph.configuration.Render.HtmlDestinationPath+"stats_"+
+				global.ReplaceString(Graph.testName, " ", "")+"_"+
+				Graph.benchTool+".html")
+
 		}
 
 		pageStats = components.NewPage()
@@ -503,18 +593,30 @@ func (Graph *GraphGenerator) BuildPage() bool {
 
 	return true
 }
+func (Graph *GraphGenerator) getTestFilters(filters string) []string {
+	if len(filters) > 0 {
+		return strings.Split(filters, ",")
+	}
+	return nil
+
+}
 
 func (Graph *GraphGenerator) PrintImages() {
 
-	if _, err := os.Stat(Graph.configuration.Render.HtmlDestinationPath + string(os.PathSeparator) + "images" + string(os.PathSeparator)); os.IsNotExist(err) {
-		err = os.Mkdir(Graph.configuration.Render.HtmlDestinationPath+string(os.PathSeparator)+"images", os.ModePerm)
-		if err != nil {
-			panic(err)
-		}
+	if !global.CheckIfPathExists(Graph.configuration.Render.HtmlDestinationPath + string(os.PathSeparator) + "images") {
+		global.CreatePath(Graph.configuration.Render.HtmlDestinationPath + string(os.PathSeparator) + "images")
 	}
+	log.Infof("Images available at %s", Graph.configuration.Render.HtmlDestinationPath+string(os.PathSeparator)+"images"+string(os.PathSeparator))
 
 	for _, chartDataTest := range Graph.chartsData {
 		if !strings.Contains(strings.ToLower(chartDataTest.title), "warmup") {
+			//checking filters for title and dimension
+			skip := checkFilters(Graph, chartDataTest)
+
+			if skip > 0 {
+				continue
+			}
+
 			mylables := []string{}
 			if strings.Contains(chartDataTest.title, "select_run_select_scan") {
 				mylables = []string{"TotalTime", "latencyPct95(μs)"}
@@ -530,14 +632,23 @@ func (Graph *GraphGenerator) PrintImages() {
 				bar := charts.NewLine()
 				//}
 
-				titleFull := global.ReplaceString(chartDataTest.title, "_", " ") + " " + chartDataTest.dimension
-				if chartDataTest.prePost == 0 {
-					titleFull += " Pre Writes"
+				titleFull := ""
+				// In case of TPCC tests we do not add all the additional info
+				if strings.Contains(chartDataTest.title, "tpcc") || strings.Contains(chartDataTest.title, "write") {
+					titleFull = global.ReplaceString(chartDataTest.title, "_", " ")
 				} else {
-					titleFull += " Post Writes"
+					titleFull = global.ReplaceString(chartDataTest.title, "_", " ") + " " + chartDataTest.dimension
+
+					if chartDataTest.prePost == 0 {
+						titleFull += " Ordered data"
+					} else {
+						titleFull += " Unordered data"
+					}
+
+					titleFull = titleFull + " " + labelReference
+
 				}
 
-				titleFull = titleFull + "_" + labelReference
 				image = image + global.ReplaceString(titleFull, "[\\s\\/%\\(\\)]", "_") + ".jpg"
 				//image = image + global.ReplaceString(titleFull, "__", "_") + ".jpg"
 
@@ -569,7 +680,7 @@ func (Graph *GraphGenerator) PrintImages() {
 				for _, chartItemInstance := range chartDataTest.chartItems {
 					if chartItemInstance.label == labelReference {
 						//log.Debugf("Len items dataBar %d  test %s label %s", len(chartItemInstance.dataBar), chartDataTest.title, chartItemInstance.label)
-						bar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.provider, chartItemInstance.dataLine,
+						bar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.producer, chartItemInstance.dataLine,
 							charts.WithLineStyleOpts(opts.LineStyle{Color: chartItemInstance.color}),
 							charts.WithItemStyleOpts(opts.ItemStyle{Color: chartItemInstance.color}))
 					}
@@ -579,16 +690,39 @@ func (Graph *GraphGenerator) PrintImages() {
 				suffix := filepath.Ext(file)[1:]
 				fileName := file[0 : len(file)-len(suffix)-1]
 
-				config := &SnapshotConfig{
-					RenderContent: bar.RenderContent(),
-					Path:          path,
-					FileName:      fileName,
-					Suffix:        suffix,
-					Quality:       1,
-					KeepHtml:      false,
+				//errImage := render.MakeChartSnapshot(bar.RenderContent(), path+fileName+"."+suffix)
+				//
+				//config := &SnapshotConfig{
+				//	RenderContent: bar.RenderContent(),
+				//	Path:          path,
+				//	FileName:      fileName,
+				//	Suffix:        suffix,
+				//	Quality:       100,
+				//	KeepHtml:      false,
+				//}
+
+				//config := render.SnapshotConfig{
+				//	RenderContent: bar.RenderContent(),
+				//	Path:          path,
+				//	FileName:      fileName,
+				//	Suffix:        suffix,
+				//	Quality:       100,
+				//	KeepHtml:      false,
+				//}
+				quality := Graph.configuration.Render.PrintChartsQuality
+				if quality < 1 || quality > 10 {
+					quality = 1
 				}
 
-				errImage := MakeSnapshot(config)
+				errImage := render.MakeSnapshot(
+					render.NewSnapshotConfig(
+						bar.RenderContent(),
+						path+fileName+"."+suffix,
+						func(config *render.SnapshotConfig) { config.Quality = quality }))
+
+				//errImage := render.MakeSnapshot(config)
+
+				//errImage := MakeSnapshot(config)
 				if errImage != nil {
 					log.Errorf("Error printing image %s", image)
 				} else {
@@ -611,10 +745,17 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 	//	set axis labels based on the label
 	//		parse provider
 	//			add the dataBar
+
 	for _, chartDataTest := range Graph.chartsData {
 		if !strings.Contains(strings.ToLower(chartDataTest.title), "warmup") {
 
-			//IF test is select scan we onl show totaltime and latency
+			skip := checkFilters(Graph, chartDataTest)
+
+			if skip > 0 {
+				continue
+			}
+
+			//IF test is select scan we only show totaltime and latency
 			mylables := []string{}
 			if strings.Contains(chartDataTest.title, "select_run_select_scan") {
 				mylables = []string{"TotalTime", "latencyPct95(μs)"}
@@ -627,16 +768,26 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 
 				bar := charts.NewLine()
 
-				titleFull := global.ReplaceString(chartDataTest.title, "_", " ") + " " + chartDataTest.dimension
-				if strings.Contains(labelReference, "latencyPct95(μs)") {
-					titleFull += " (Lower is better)"
+				titleFull := ""
+				// In case of TPCC tests we do not add all the additional info
+				if strings.Contains(chartDataTest.title, "tpcc") || strings.Contains(chartDataTest.title, "write") {
+					titleFull = global.ReplaceString(chartDataTest.title, "_", " ")
+				} else {
+					titleFull = global.ReplaceString(chartDataTest.title, "_", " ") + " " + chartDataTest.dimension
+
+					if chartDataTest.prePost == 0 {
+						titleFull += " Ordered data"
+					} else {
+						titleFull += " Unordered data"
+					}
+
+					if strings.Contains(labelReference, "latencyPct95(μs)") {
+						titleFull += " (Lower is better)"
+					}
+					titleFull = titleFull + " " + labelReference
+
 				}
 
-				if chartDataTest.prePost == 0 {
-					titleFull += " Pre Writes"
-				} else {
-					titleFull += " Post Writes"
-				}
 				//general
 
 				bar.SetGlobalOptions(
@@ -668,7 +819,7 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 				for _, chartItemInstance := range chartDataTest.chartItems {
 					if chartItemInstance.label == labelReference {
 						//log.Debugf("Len items dataBar %d  test %s label %s", len(chartItemInstance.dataBar), chartDataTest.title, chartItemInstance.label)
-						bar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.provider, chartItemInstance.dataLine,
+						bar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.producer, chartItemInstance.dataLine,
 							charts.WithLineStyleOpts(opts.LineStyle{Color: chartItemInstance.color}),
 							charts.WithItemStyleOpts(opts.ItemStyle{Color: chartItemInstance.color}))
 					}
@@ -684,6 +835,75 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 	}
 
 }
+
+func checkFilters(Graph *GraphGenerator, chartDataTest charTest) int {
+	skip := 0
+	//checking filters for title and dimension
+	if Graph.FilterByTitle != nil {
+		if Graph.filterByCondition(chartDataTest.title, Graph.FilterByTitle) > 0 {
+			skip = 1
+		}
+	}
+
+	if Graph.FilterExcludeByTitle != nil {
+		if Graph.filterByCondition(chartDataTest.title, Graph.FilterExcludeByTitle) > 0 {
+			skip = 0
+		} else {
+			skip = 1
+		}
+	}
+
+	if Graph.FilterByDimension != nil {
+		if Graph.filterByCondition(chartDataTest.dimension, Graph.FilterByDimension) > 0 {
+			skip = 1
+		}
+	}
+
+	if Graph.FilterByPrePost != nil && chartDataTest.actionType == 0 {
+		//If the array has 2 values (pre/post) we will not filter for it
+		prePost := 0
+		if len(Graph.FilterByPrePost) < 2 {
+			if Graph.FilterByPrePost[0] == "post" {
+				prePost = 1
+			}
+
+			if Graph.filterByNumericCondition(chartDataTest.prePost, []int{prePost}) > 0 {
+				skip = 1
+			}
+		}
+	}
+	return skip
+}
+
+//func (Graph *GraphGenerator) checkFilterTitle(chartDataTest charTest) int {
+//	if Graph.FilterByTitle != nil {
+//		skip := 1
+//		for _, filter := range Graph.FilterByTitle {
+//			re := regexp.MustCompile(filter)
+//			match := re.FindStringSubmatch(chartDataTest.title)
+//			if len(match) > 0 {
+//				skip = 0
+//			}
+//		}
+//		return skip
+//	}
+//	return 0
+//}
+//
+//func (Graph *GraphGenerator) checkFilterDimension(chartDataTest charTest) int {
+//	if Graph.FilterByDimension != nil {
+//		skip := 1
+//		for _, filter := range Graph.FilterByDimension {
+//			re := regexp.MustCompile(filter)
+//			match := re.FindStringSubmatch(chartDataTest.dimension)
+//			if len(match) > 0 {
+//				skip = 0
+//			}
+//		}
+//		return skip
+//	}
+//	return 0
+//}
 
 /*
 Here we will export each chart as a csv set  where the output should be like
@@ -703,7 +923,7 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 	currentTime := time.Now()
 	csvOutputPath := Graph.configuration.Render.CsvDestinationPath
 	if !global.CheckIfPathExists(csvOutputPath) {
-		err := os.Mkdir(csvOutputPath, 0755)
+		err := os.MkdirAll(csvOutputPath, 0755)
 		if err != nil {
 			log.Errorf("Creating CSV path: %s", err.Error())
 		}
@@ -713,41 +933,51 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 	csvFile, err := os.Create(csvOutputPath + csvFileName + ".csv")
 	if err != nil {
 		log.Errorf("Creating CSV File: %s", err.Error())
+	} else {
+		log.Infof("CSV File at %s", csvOutputPath+csvFileName+".csv")
 	}
 	defer csvFile.Close()
 
 	csvLabels := make(map[string]csvDat)
 
-	for _, chartStatTest := range Graph.chartsData {
+	for _, chartCSVTest := range Graph.chartsData {
+
+		//checking filters for title and dimension
+		skip := checkFilters(Graph, chartCSVTest)
+
+		if skip > 0 {
+			continue
+		}
+
 		labels := []string{}
 		providers := []string{}
 
-		if strings.Contains(chartStatTest.title, "select_run_select_scan") {
+		if strings.Contains(chartCSVTest.title, "select_run_select_scan") {
 		}
 
-		csvFile.WriteString(chartStatTest.title + " " + chartStatTest.dimension + "\n")
+		csvFile.WriteString(chartCSVTest.title + " " + chartCSVTest.dimension + "\n")
 		csvFile.Sync()
 
 		// we first prepare the objects and the map
-		for _, chart := range chartStatTest.chartItems {
+		for _, chart := range chartCSVTest.chartItems {
 			if !slices.Contains(providers, chart.provider) {
 				providers = append(providers, chart.provider)
 			}
 
 			if !slices.Contains(labels, chart.label) {
 				labels = append(labels, chart.label)
-				data := make([][]string, len(chartStatTest.threads)+1)
+				data := make([][]string, len(chartCSVTest.threads)+1)
 
 				for i := 0; i < len(data); i++ {
-					data[i] = make([]string, chartStatTest.numProviders+1)
+					data[i] = make([]string, chartCSVTest.numProviders+1)
 					if i > 0 {
-						data[i][0] = strconv.Itoa(chartStatTest.threads[i-1])
+						data[i][0] = strconv.Itoa(chartCSVTest.threads[i-1])
 					} else {
 						data[i][0] = "Threads"
 					}
 
 				}
-				csvLabels[chart.label] = csvDat{chart.label, chartStatTest.dimension, data}
+				csvLabels[chart.label] = csvDat{chart.label, chartCSVTest.dimension, data}
 			}
 		}
 		// we want to have the order of the providers to remain always the same
@@ -761,13 +991,13 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 			//loop also per label
 			for _, kLabel := range labels {
 
-				for _, chart := range chartStatTest.chartItems {
+				for _, chart := range chartCSVTest.chartItems {
 					if chart.provider == provider && chart.label == kLabel {
 						label := chart.label
 						myCsvLabel := csvLabels[label]
 						csvData := myCsvLabel.data
 
-						csvData[0][providerPosition] = strings.ReplaceAll(provider, ",", "")
+						csvData[0][providerPosition] = strings.ReplaceAll(chart.producer, ",", "")
 
 						for i := 0; i < len(chart.dataLine); i++ {
 							csvData[i+1][providerPosition] = fmt.Sprintf("%v", chart.dataLine[i].Value)
@@ -780,7 +1010,7 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 		}
 
 		//we now flush all the dataLine of the test to file
-		for i := 0; i < len(chartStatTest.threads)+1; i++ {
+		for i := 0; i < len(chartCSVTest.threads)+1; i++ {
 			lineBuffer := bufio.NewWriter(csvFile)
 			// we want labels in order so we ue the label array
 			for _, kLabel := range labels {
@@ -790,7 +1020,7 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 				} else {
 					lineBuffer.WriteString(",")
 				}
-				for ip := 0; ip < (chartStatTest.numProviders + 1); ip++ {
+				for ip := 0; ip < (len(providers) + 1); ip++ {
 					lineBuffer.WriteString(fmt.Sprintf("%v,", csvData.data[i][ip]))
 				}
 				lineBuffer.WriteString(",")
@@ -802,7 +1032,7 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 
 		}
 		csvFile.WriteString("\n\n")
-		log.Infof("Label for CSV test: %s  %s", chartStatTest.title, labels)
+		log.Infof("Label for CSV test: %s  %s", chartCSVTest.title, labels)
 	}
 	return true
 }
@@ -816,6 +1046,13 @@ func (Graph *GraphGenerator) addStatsToPage(page *components.Page) {
 	//			add the dataBar
 	for _, chartStatTest := range Graph.chartsStats {
 		if !strings.Contains(strings.ToLower(chartStatTest.title), "warmup") {
+
+			//checking filters for title and dimension
+			skip := checkFilters(Graph, chartStatTest)
+
+			if skip > 0 {
+				continue
+			}
 
 			//IF test is select scan we onl show totaltime and latency
 			mylables := []string{}
@@ -832,9 +1069,9 @@ func (Graph *GraphGenerator) addStatsToPage(page *components.Page) {
 
 				titleFull := global.ReplaceString(chartStatTest.title, "_", " ") + " " + chartStatTest.dimension
 				if chartStatTest.prePost == 0 {
-					titleFull += " Pre Writes"
+					titleFull += " Ordered Data"
 				} else {
-					titleFull += " Post Writes"
+					titleFull += " Unordered Data"
 				}
 				//general
 
@@ -897,4 +1134,31 @@ func (Graph *GraphGenerator) getBarStats(testResult ResultTest, inLabel string) 
 		threads = append(threads, value.ThreadNumber)
 	}
 	return threads, items
+}
+
+func (Graph *GraphGenerator) filterByCondition(in string, filters []string) int {
+	//if Graph.FilterByProducer != nil {
+	skip := 1
+	for _, filter := range filters {
+		re := regexp.MustCompile("(?i)" + filter)
+		match := re.FindStringSubmatch(in)
+		if len(match) > 0 {
+			skip = 0
+		}
+	}
+	return skip
+	//}
+	//return 0
+}
+func (Graph *GraphGenerator) filterByNumericCondition(in int, filters []int) int {
+	//if Graph.FilterByProducer != nil {
+	skip := 1
+	for _, filter := range filters {
+		if filter == in {
+			skip = 0
+		}
+	}
+	return skip
+	//}
+	//return 0
 }
