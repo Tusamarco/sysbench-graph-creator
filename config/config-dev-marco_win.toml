@@ -1,6 +1,6 @@
 #v.0.1.0
 [parser]
-sourceDataPath="D:\\work\\percona\\Tech_Lead\\Projects\\Benchmarking_procedures\\benchmark_exercise_december_2024_q1_2025\\results\\blade3-tpcc"
+sourceDataPath="D:\\work\\percona\\Tech_Lead\\Projects\\Benchmarking_procedures\\Results_archive\\joins"
 #sourceDataPath="D:\\work\\blogs\\2024\\sakila_where_are_you_going\\sysbench\\base\\logs\\onlymysql"
 #sourceDataPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base/logs"
 #sourceDataPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/for_report/PS_VS_MYS_8036_optimized/logs" #MY-PS-8034-BASE
@@ -11,7 +11,7 @@ distanceLabel = "operations/s"
 
 [render]
 graphType="column"
-destinationPath="D:\\work\\percona\\Tech_Lead\\Projects\\Benchmarking_procedures\\benchmark_exercise_december_2024_q1_2025\\results\\blade3-tpcc"
+destinationPath="D:\\work\\percona\\Tech_Lead\\Projects\\Benchmarking_procedures\\Results_archive\\output_joins"
 #destinationPath="D:\\work\\blogs\\2024\\sakila_where_are_you_going\\sysbench\\base\\"
 #destinationPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base"
 #destinationPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base/logs"
@@ -25,7 +25,7 @@ printCharts=false
 httpServerPort=8089
 httpServerIp="localhost"
 #labels=""
-labels="operations/s"
+#labels="TotalTime"
 #labels="operations/s,latencyPct95(μs)"
 #labels="latencyPct95(μs),Latency(ms) min, Latency(ms) max, Latency(ms) avg, Latency(ms) sum"
 #labels="TotalTime,Events/s,operations/s,writes/s,reads/s,latencyPct95(μs)"
@@ -41,13 +41,13 @@ filterByProducer=""
 filterByPrePost=""
 #filterTestsBy="select_run_range,write_run_update_no_index"
 
-chartHeight=400
-chartWidth=800
+chartHeight=700
+chartWidth=1200
 printChartsFormat="jpeg"
-printChartsQuality = 10
+printChartsQuality = 5
 
 [global]
-testName="Comparing MySQL Versions 5.7 to 9.0"
+testName="Test Join"
 logLevel = "info"
 logTarget = "stdout" #stdout | file
 logFile = "/Users/marcotusa/tmp/sysbench_graph_creator.log"
@@ -72,7 +72,7 @@ color=[
     ,"name=MySQL;version=9.2;color=#f0ca6c"
     ,"name=MySQL;version=9.3;color=#f2d99b"
     ,"name=MySQL;version=9.5;color=#f02505"
-    ,"name=Maria;version=11.6;color=#f24500"
+    ,"name=Maria;version=11.8;color=#f29d00"
     ,"name=Source;version=9.5;color=#1aff41"
     ,"name=Source;version=8.4.3;color=#1a9bff"
     ,"name=Source;version=8.4.4;color=#6db8f2"

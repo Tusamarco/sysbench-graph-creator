@@ -41,8 +41,8 @@ filterByPrePost="post"
 #filterTestsBy="select_run_range,write_run_update_no_index"
 #filterByDimension="small,large"
 
-chartHeight=400
-chartWidth=800
+chartHeight=700
+chartWidth=1200
 printChartsFormat="jpeg"
 printChartsQuality = 10
 
@@ -61,21 +61,21 @@ color=[
     ,"name=Percona;version=9.4;color=#27842f"
     ,"name=Percona;version=8.4.3;color=#ff7e1a"
     ,"name=Percona;version=8.4.4;color=#6db8f2"
-    ,"name=Percona;version=8.4.7;color=#9fcdf0"
+    ,"name=Percona;version=8.4.7;color=#36763c"
     ,"name=Percona;version=5.7;color=#f0b336"
     ,"name=MySQL;version=5.7;color=#bac0cd"
     ,"name=MySQL;version=8.0;color=#93c7ff"
     ,"name=MySQL;version=8.4;color=#f9a98a"
-    ,"name=MySQL;version=8.4.4;color=#9af98a"
+    ,"name=MySQL;version=8.4.7;color=#9af98a"
     ,"name=MySQL;version=8.4.5;color=#69e255"
     ,"name=MySQL;version=9.1;color=#cc3a00"
     ,"name=MySQL;version=9.2;color=#f0ca6c"
     ,"name=MySQL;version=9.3;color=#f2d99b"
     ,"name=MySQL;version=9.5;color=#f02505"
-    ,"name=Maria;version=11.6;color=#f24500"
+    ,"name=Maria;version=11.8;color=#f29d00"
     ,"name=Source;version=9.5;color=#1aff41"
     ,"name=Source;version=8.4.3;color=#1a9bff"
     ,"name=Source;version=8.4.4;color=#6db8f2"
-    ,"name=Source;version=8.4.7;color=#9fcdf0"
+    ,"name=Source;version=8.4.7;color=#7fcdf0"
     ,"name=Thebeast;version=8.0;color=#93c7ff"
 ]
