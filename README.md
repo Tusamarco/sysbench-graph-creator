@@ -2,6 +2,8 @@
 
 Sysbench Graph Creator is a Go-based utility that generates graphs from the output of [sysbench](https://github.com/akopytov/sysbench), a popular benchmark tool for evaluating database systems' performance.
 
+For more project details see [documentation](documentation.md)
+
 ## Features
 - Parses sysbench output to extract performance metrics.
 - Generates visual graphs to represent benchmarking results.
