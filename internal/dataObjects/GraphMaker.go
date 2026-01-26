@@ -3,11 +3,6 @@ package dataObjects
 import (
 	"bufio"
 	"fmt"
-	"github.com/go-echarts/go-echarts/v2/charts"
-	"github.com/go-echarts/go-echarts/v2/components"
-	"github.com/go-echarts/go-echarts/v2/opts"
-	"github.com/go-echarts/snapshot-chromedp/render"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"math"
 	"net/http"
@@ -20,6 +15,12 @@ import (
 	"strings"
 	global "sysbench-graph-creator/internal/global"
 	"time"
+
+	"github.com/go-echarts/go-echarts/v2/charts"
+	"github.com/go-echarts/go-echarts/v2/components"
+	"github.com/go-echarts/go-echarts/v2/opts"
+	"github.com/go-echarts/snapshot-chromedp/render"
+	log "github.com/sirupsen/logrus"
 )
 
 type chartItem struct {
@@ -278,6 +279,7 @@ func logRequest(handler http.Handler) http.Handler {
 func (Graph *GraphGenerator) RenderReults() bool {
 	producersLen := len(Graph.producers)
 	//emptyResult := ResultTest{}
+	charType := Graph.configuration.Render.GraphType
 
 	if producersLen > 0 {
 		testTypes := Graph.findLongestTestList()
@@ -290,7 +292,7 @@ func (Graph *GraphGenerator) RenderReults() bool {
 			}
 			newCharTestData := charTest{
 				title:        testType.Name,
-				charType:     "line",
+				charType:     charType,
 				numProviders: producersLen,
 			}
 			newCharTestData.chartItems = []chartItem{}
@@ -398,7 +400,7 @@ func (Graph *GraphGenerator) RenderReults() bool {
 
 	}
 	//calculate summary results
-	Graph.calculateSummary()
+	//Graph.calculateSummary() // skip for now
 	return true
 }
 
@@ -628,9 +630,8 @@ func (Graph *GraphGenerator) PrintImages() {
 			for _, labelReference := range mylables {
 				image := Graph.configuration.Render.HtmlDestinationPath + string(os.PathSeparator) + "images" + string(os.PathSeparator)
 
-				//if chartDataTest.charType == "bar" {
-				bar := charts.NewLine()
-				//}
+				newLine := charts.NewLine()
+				newBar := charts.NewBar()
 
 				titleFull := ""
 				// In case of TPCC tests we do not add all the additional info
@@ -651,44 +652,115 @@ func (Graph *GraphGenerator) PrintImages() {
 
 				image = image + global.ReplaceString(titleFull, "[\\s\\/%\\(\\)]", "_") + ".jpg"
 				//image = image + global.ReplaceString(titleFull, "__", "_") + ".jpg"
-
-				bar.SetGlobalOptions(
-					charts.WithInitializationOpts(opts.Initialization{
-						Width:           strconv.Itoa(Graph.configuration.Render.ChartWidth) + "px",
-						Height:          strconv.Itoa(Graph.configuration.Render.ChartHeight) + "px",
-						BackgroundColor: "white",
-					}),
-					charts.WithLegendOpts(opts.Legend{Width: "90%", Height: "300", Bottom: "-1%", Type: "plain"}),
-					charts.WithXAxisOpts(opts.XAxis{Name: "Threads", NameGap: 20, NameLocation: "middle", SplitLine: &opts.SplitLine{Show: opts.Bool(true)}}),
-					charts.WithAnimation(false),
-					charts.WithToolboxOpts(opts.Toolbox{
-						Right: "20%",
-						Feature: &opts.ToolBoxFeature{
-							SaveAsImage: &opts.ToolBoxFeatureSaveAsImage{
-								Type:  "jpg",
-								Title: "Save File",
-							},
-							DataView: &opts.ToolBoxFeatureDataView{
-								Title: "DataView",
-								Lang:  []string{"dataBar view", "turn off", "refresh"},
-							},
-						}},
-					),
-					charts.WithTitleOpts(opts.Title{Title: titleFull, Subtitle: labelReference}),
-					charts.WithYAxisOpts(opts.YAxis{Name: labelReference, NameLocation: "middle", NameGap: 60, AxisLabel: &opts.AxisLabel{Rotate: 0.00, Align: "right"}}),
-				)
-				for _, chartItemInstance := range chartDataTest.chartItems {
-					if chartItemInstance.label == labelReference {
-						//log.Debugf("Len items dataBar %d  test %s label %s", len(chartItemInstance.dataBar), chartDataTest.title, chartItemInstance.label)
-						bar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.producer, chartItemInstance.dataLine,
-							charts.WithLineStyleOpts(opts.LineStyle{Color: chartItemInstance.color}),
-							charts.WithItemStyleOpts(opts.ItemStyle{Color: chartItemInstance.color}))
-					}
-				}
+				// DEPRECATED
+				//bar.SetGlobalOptions(
+				//	charts.WithInitializationOpts(opts.Initialization{
+				//		Width:           strconv.Itoa(Graph.configuration.Render.ChartWidth) + "px",
+				//		Height:          strconv.Itoa(Graph.configuration.Render.ChartHeight) + "px",
+				//		BackgroundColor: "white",
+				//	}),
+				//	charts.WithLegendOpts(opts.Legend{Width: "90%", Height: "300", Bottom: "-1%", Type: "plain"}),
+				//	charts.WithXAxisOpts(opts.XAxis{Name: "Threads", NameGap: 20, NameLocation: "middle", SplitLine: &opts.SplitLine{Show: opts.Bool(true)}}),
+				//	charts.WithAnimation(false),
+				//	charts.WithToolboxOpts(opts.Toolbox{
+				//		Right: "20%",
+				//		Feature: &opts.ToolBoxFeature{
+				//			SaveAsImage: &opts.ToolBoxFeatureSaveAsImage{
+				//				Type:  "jpg",
+				//				Title: "Save File",
+				//			},
+				//			DataView: &opts.ToolBoxFeatureDataView{
+				//				Title: "DataView",
+				//				Lang:  []string{"dataBar view", "turn off", "refresh"},
+				//			},
+				//		}},
+				//	),
+				//	charts.WithTitleOpts(opts.Title{Title: titleFull, Subtitle: labelReference}),
+				//	charts.WithYAxisOpts(opts.YAxis{Name: labelReference, NameLocation: "middle", NameGap: 60, AxisLabel: &opts.AxisLabel{Rotate: 0.00, Align: "right"}}),
+				//)
+				//for _, chartItemInstance := range chartDataTest.chartItems {
+				//	if chartItemInstance.label == labelReference {
+				//		//log.Debugf("Len items dataBar %d  test %s label %s", len(chartItemInstance.dataBar), chartDataTest.title, chartItemInstance.label)
+				//
+				//		bar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.producer, chartItemInstance.dataLine,
+				//			charts.WithLineStyleOpts(opts.LineStyle{Color: chartItemInstance.color}),
+				//			charts.WithItemStyleOpts(opts.ItemStyle{Color: chartItemInstance.color}))
+				//	}
+				//}
 
 				path, file := filepath.Split(image)
 				suffix := filepath.Ext(file)[1:]
 				fileName := file[0 : len(file)-len(suffix)-1]
+				quality := Graph.configuration.Render.PrintChartsQuality
+				if quality < 1 || quality > 10 {
+					quality = 1
+				}
+
+				var errImage error
+
+				if chartDataTest.charType == "line" {
+					newLine.SetGlobalOptions(
+						charts.WithInitializationOpts(opts.Initialization{
+							Width:           strconv.Itoa(Graph.configuration.Render.ChartWidth) + "px",
+							Height:          strconv.Itoa(Graph.configuration.Render.ChartHeight) + "px",
+							BackgroundColor: "white",
+						}),
+						charts.WithLegendOpts(opts.Legend{Width: "90%", Height: "300", Bottom: "-1%", Type: "plain"}),
+						charts.WithXAxisOpts(opts.XAxis{Name: "Threads", NameGap: 20, NameLocation: "middle", SplitLine: &opts.SplitLine{Show: opts.Bool(true)}}),
+						charts.WithAnimation(false),
+						charts.WithTitleOpts(opts.Title{Title: titleFull, Subtitle: labelReference}),
+						charts.WithYAxisOpts(opts.YAxis{Name: labelReference, NameLocation: "middle", NameGap: 60, AxisLabel: &opts.AxisLabel{Rotate: 0.00, Align: "right"}}),
+					)
+					for _, chartItemInstance := range chartDataTest.chartItems {
+						if chartItemInstance.label == labelReference {
+							//log.Debugf("Len items dataBar %d  test %s label %s", len(chartItemInstance.dataBar), chartDataTest.title, chartItemInstance.label)
+
+							newLine.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.producer, chartItemInstance.dataLine,
+								charts.WithLineStyleOpts(opts.LineStyle{Color: chartItemInstance.color}),
+								charts.WithItemStyleOpts(opts.ItemStyle{Color: chartItemInstance.color}))
+						}
+					}
+
+					errImage = render.MakeSnapshot(
+						render.NewSnapshotConfig(
+							newLine.RenderContent(),
+							path+fileName+"."+suffix,
+							func(config *render.SnapshotConfig) { config.Quality = quality }))
+
+				} else if chartDataTest.charType == "bar" {
+					newBar.SetGlobalOptions(
+						charts.WithInitializationOpts(opts.Initialization{
+							Width:           strconv.Itoa(Graph.configuration.Render.ChartWidth) + "px",
+							Height:          strconv.Itoa(Graph.configuration.Render.ChartHeight) + "px",
+							BackgroundColor: "white",
+						}),
+						charts.WithLegendOpts(opts.Legend{Width: "90%", Height: "300", Bottom: "-1%", Type: "plain"}),
+						charts.WithXAxisOpts(opts.XAxis{Name: "Threads", NameGap: 20, NameLocation: "middle", SplitLine: &opts.SplitLine{Show: opts.Bool(true)}}),
+						charts.WithAnimation(false),
+						charts.WithTitleOpts(opts.Title{Title: titleFull, Subtitle: labelReference}),
+						charts.WithYAxisOpts(opts.YAxis{Name: labelReference, NameLocation: "middle", NameGap: 60, AxisLabel: &opts.AxisLabel{Rotate: 0.00, Align: "right"}}),
+					)
+					for _, chartItemInstance := range chartDataTest.chartItems {
+						if chartItemInstance.label == labelReference {
+							//log.Debugf("Len items dataBar %d  test %s label %s", len(chartItemInstance.dataBar), chartDataTest.title, chartItemInstance.label)
+
+							newBar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.producer, chartItemInstance.dataBar,
+								charts.WithLineStyleOpts(opts.LineStyle{Color: chartItemInstance.color}),
+								charts.WithItemStyleOpts(opts.ItemStyle{Color: chartItemInstance.color}))
+						}
+					}
+
+					errImage = render.MakeSnapshot(
+						render.NewSnapshotConfig(
+							newBar.RenderContent(),
+							path+fileName+"."+suffix,
+							func(config *render.SnapshotConfig) { config.Quality = quality }))
+
+				}
+
+				//path, file := filepath.Split(image)
+				//suffix := filepath.Ext(file)[1:]
+				//fileName := file[0 : len(file)-len(suffix)-1]
 
 				//errImage := render.MakeChartSnapshot(bar.RenderContent(), path+fileName+"."+suffix)
 				//
@@ -709,16 +781,17 @@ func (Graph *GraphGenerator) PrintImages() {
 				//	Quality:       100,
 				//	KeepHtml:      false,
 				//}
-				quality := Graph.configuration.Render.PrintChartsQuality
-				if quality < 1 || quality > 10 {
-					quality = 1
-				}
 
-				errImage := render.MakeSnapshot(
-					render.NewSnapshotConfig(
-						bar.RenderContent(),
-						path+fileName+"."+suffix,
-						func(config *render.SnapshotConfig) { config.Quality = quality }))
+				//quality := Graph.configuration.Render.PrintChartsQuality
+				//if quality < 1 || quality > 10 {
+				//	quality = 1
+				//}
+
+				//errImage := render.MakeSnapshot(
+				//	render.NewSnapshotConfig(
+				//		bar.RenderContent(),
+				//		path+fileName+"."+suffix,
+				//		func(config *render.SnapshotConfig) { config.Quality = quality }))
 
 				//errImage := render.MakeSnapshot(config)
 
@@ -766,7 +839,8 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 
 			for _, labelReference := range mylables {
 
-				bar := charts.NewLine()
+				newLine := charts.NewLine()
+				newBar := charts.NewBar()
 
 				titleFull := ""
 				// In case of TPCC tests we do not add all the additional info
@@ -789,43 +863,82 @@ func (Graph *GraphGenerator) addDataToPage(page *components.Page) {
 				}
 
 				//general
-
-				bar.SetGlobalOptions(
-					charts.WithInitializationOpts(opts.Initialization{
-						Width:  "1200px",
-						Height: "500px",
-					}),
-					charts.WithLegendOpts(opts.Legend{Width: "90%", Height: "40%", Bottom: "-1%", Type: "plain"}),
-					//charts.WithLegendOpts(opts.Legend{Width: "100%", Height: "40%", Bottom: "-1%"}),
-					charts.WithXAxisOpts(opts.XAxis{Name: "Threads", NameGap: 20, NameLocation: "middle", SplitLine: &opts.SplitLine{Show: opts.Bool(true)}}),
-					//charts.WithColorsOpts(opts.Colors{"blue", "orange"}),
-					//charts.WithLegendOpts(opts.Legend{Bottom: "0%"}),
-					charts.WithToolboxOpts(opts.Toolbox{
-						Right: "20%",
-						Feature: &opts.ToolBoxFeature{
-							SaveAsImage: &opts.ToolBoxFeatureSaveAsImage{
-								Type:  "jpg",
-								Title: "Save File",
-							},
-							DataView: &opts.ToolBoxFeatureDataView{
-								Title: "DataView",
-								Lang:  []string{"dataBar view", "turn off", "refresh"},
-							},
-						}},
-					),
-					charts.WithTitleOpts(opts.Title{Title: titleFull, Subtitle: labelReference}),
-					charts.WithYAxisOpts(opts.YAxis{Name: labelReference, NameLocation: "middle", NameGap: 60, AxisLabel: &opts.AxisLabel{Rotate: 0.00, Align: "right"}}),
-				)
-				for _, chartItemInstance := range chartDataTest.chartItems {
-					if chartItemInstance.label == labelReference {
-						//log.Debugf("Len items dataBar %d  test %s label %s", len(chartItemInstance.dataBar), chartDataTest.title, chartItemInstance.label)
-						bar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.producer, chartItemInstance.dataLine,
-							charts.WithLineStyleOpts(opts.LineStyle{Color: chartItemInstance.color}),
-							charts.WithItemStyleOpts(opts.ItemStyle{Color: chartItemInstance.color}))
+				if chartDataTest.charType == "line" {
+					newLine.SetGlobalOptions(
+						charts.WithInitializationOpts(opts.Initialization{
+							Width:  "1200px",
+							Height: "500px",
+						}),
+						charts.WithLegendOpts(opts.Legend{Width: "90%", Height: "40%", Bottom: "-1%", Type: "plain"}),
+						//charts.WithLegendOpts(opts.Legend{Width: "100%", Height: "40%", Bottom: "-1%"}),
+						charts.WithXAxisOpts(opts.XAxis{Name: "Threads", NameGap: 20, NameLocation: "middle", SplitLine: &opts.SplitLine{Show: opts.Bool(true)}}),
+						//charts.WithColorsOpts(opts.Colors{"blue", "orange"}),
+						//charts.WithLegendOpts(opts.Legend{Bottom: "0%"}),
+						charts.WithToolboxOpts(opts.Toolbox{
+							Right: "20%",
+							Feature: &opts.ToolBoxFeature{
+								SaveAsImage: &opts.ToolBoxFeatureSaveAsImage{
+									Type:  "jpg",
+									Title: "Save File",
+								},
+								DataView: &opts.ToolBoxFeatureDataView{
+									Title: "DataView",
+									Lang:  []string{"dataBar view", "turn off", "refresh"},
+								},
+							}},
+						),
+						charts.WithTitleOpts(opts.Title{Title: titleFull, Subtitle: labelReference}),
+						charts.WithYAxisOpts(opts.YAxis{Name: labelReference, NameLocation: "middle", NameGap: 60, AxisLabel: &opts.AxisLabel{Rotate: 0.00, Align: "right"}}),
+					)
+					for _, chartItemInstance := range chartDataTest.chartItems {
+						if chartItemInstance.label == labelReference {
+							//log.Debugf("Len items dataBar %d  test %s label %s", len(chartItemInstance.dataBar), chartDataTest.title, chartItemInstance.label)
+							newLine.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.producer, chartItemInstance.dataLine,
+								charts.WithLineStyleOpts(opts.LineStyle{Color: chartItemInstance.color}),
+								charts.WithItemStyleOpts(opts.ItemStyle{Color: chartItemInstance.color}))
+						}
 					}
-				}
 
-				page.AddCharts(bar)
+					page.AddCharts(newLine)
+				} else if chartDataTest.charType == "bar" {
+					newBar.SetGlobalOptions(
+						charts.WithInitializationOpts(opts.Initialization{
+							Width:  "1200px",
+							Height: "500px",
+						}),
+						charts.WithLegendOpts(opts.Legend{Width: "90%", Height: "40%", Bottom: "-1%", Type: "plain"}),
+						//charts.WithLegendOpts(opts.Legend{Width: "100%", Height: "40%", Bottom: "-1%"}),
+						charts.WithXAxisOpts(opts.XAxis{Name: "Threads", NameGap: 20, NameLocation: "middle", SplitLine: &opts.SplitLine{Show: opts.Bool(true)}}),
+						//charts.WithColorsOpts(opts.Colors{"blue", "orange"}),
+						//charts.WithLegendOpts(opts.Legend{Bottom: "0%"}),
+						charts.WithToolboxOpts(opts.Toolbox{
+							Right: "20%",
+							Feature: &opts.ToolBoxFeature{
+								SaveAsImage: &opts.ToolBoxFeatureSaveAsImage{
+									Type:  "jpg",
+									Title: "Save File",
+								},
+								DataView: &opts.ToolBoxFeatureDataView{
+									Title: "DataView",
+									Lang:  []string{"dataBar view", "turn off", "refresh"},
+								},
+							}},
+						),
+						charts.WithTitleOpts(opts.Title{Title: titleFull, Subtitle: labelReference}),
+						charts.WithYAxisOpts(opts.YAxis{Name: labelReference, NameLocation: "middle", NameGap: 60, AxisLabel: &opts.AxisLabel{Rotate: 0.00, Align: "right"}}),
+					)
+					for _, chartItemInstance := range chartDataTest.chartItems {
+						if chartItemInstance.label == labelReference {
+							//log.Debugf("Len items dataBar %d  test %s label %s", len(chartItemInstance.dataBar), chartDataTest.title, chartItemInstance.label)
+							newBar.SetXAxis(chartDataTest.threads).AddSeries(chartItemInstance.producer, chartItemInstance.dataBar,
+								charts.WithLineStyleOpts(opts.LineStyle{Color: chartItemInstance.color}),
+								charts.WithItemStyleOpts(opts.ItemStyle{Color: chartItemInstance.color}))
+						}
+					}
+
+					page.AddCharts(newBar)
+
+				}
 
 			}
 

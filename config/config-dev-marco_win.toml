@@ -10,7 +10,7 @@ filterOutliners = true
 distanceLabel = "operations/s"
 
 [render]
-graphType="column"
+graphType="bar" # Values (bar|line)
 destinationPath="D:\\work\\percona\\Tech_Lead\\Projects\\Benchmarking_procedures\\Results_archive\\output_joins"
 #destinationPath="D:\\work\\blogs\\2024\\sakila_where_are_you_going\\sysbench\\base\\"
 #destinationPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base"
@@ -19,13 +19,13 @@ destinationPath="D:\\work\\percona\\Tech_Lead\\Projects\\Benchmarking_procedures
 csvDestinationPath=""
 printStats=false
 printData=true
-convertChartsToCsv=false
-printCharts=false
+convertChartsToCsv=true
+printCharts=true
 
 httpServerPort=8089
 httpServerIp="localhost"
 #labels=""
-#labels="TotalTime"
+labels="TotalTime"
 #labels="operations/s,latencyPct95(μs)"
 #labels="latencyPct95(μs),Latency(ms) min, Latency(ms) max, Latency(ms) avg, Latency(ms) sum"
 #labels="TotalTime,Events/s,operations/s,writes/s,reads/s,latencyPct95(μs)"

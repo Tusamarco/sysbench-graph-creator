@@ -12,7 +12,7 @@ distanceLabel = "operations/s"
 
 
 [render]
-graphType="column"
+graphType="line"  # Values (bar|line)
 destinationPath="/Users/marcotusa/work/percona/Tech_Lead/Projects/Benchmarking_procedures/benchmarking_on_hetzner/results/pippo"
 #destinationPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base"
 #destinationPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base/logs"

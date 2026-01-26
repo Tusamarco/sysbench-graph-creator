@@ -156,9 +156,9 @@ Creates visual representations of benchmark data.
 - `convertToCSV()`: Exports chart data to CSV format
 
 **Chart Types**:
-- Column charts (default)
-- Line charts (configurable)
-- Summary charts (aggregated metrics)
+- Bar charts 
+- Line charts
+
 
 **Output Formats**:
 - HTML with interactive charts
@@ -385,7 +385,7 @@ Controls output generation and rendering.
 
 ```toml
 [render]
-graphType = "column"                          # Chart type: "column" or "line"
+graphType = "line"                            # Chart type: "bar" or "line"
 destinationPath = "/path/to/results"          # Main output directory
 csvDestinationPath = "/path/to/csv"           # CSV output directory
 printStats = false                            # Print statistical summaries
