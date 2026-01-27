@@ -1112,8 +1112,14 @@ func (Graph *GraphGenerator) PrintDataCsv() bool {
 
 						csvData[0][providerPosition] = strings.ReplaceAll(chart.producer, ",", "")
 
-						for i := 0; i < len(chart.dataLine); i++ {
-							csvData[i+1][providerPosition] = fmt.Sprintf("%v", chart.dataLine[i].Value)
+						if Graph.configuration.Render.GraphType == "line" {
+							for i := 0; i < len(chart.dataLine); i++ {
+								csvData[i+1][providerPosition] = fmt.Sprintf("%v", chart.dataLine[i].Value)
+							}
+						} else {
+							for i := 0; i < len(chart.dataBar); i++ {
+								csvData[i+1][providerPosition] = fmt.Sprintf("%v", chart.dataBar[i].Value)
+							}
 						}
 						myCsvLabel.data = csvData
 						log.Debug(csvData)
