@@ -10,7 +10,7 @@ filterOutliners = true
 distanceLabel = "operations/s"
 
 [render]
-graphType="bar" # Values (bar|line)
+graphType="line" # Values (bar|line)
 destinationPath="D:\\work\\percona\\Tech_Lead\\Projects\\Benchmarking_procedures\\Results_archive\\output_joins"
 #destinationPath="D:\\work\\blogs\\2024\\sakila_where_are_you_going\\sysbench\\base\\"
 #destinationPath="/Users/marcotusa/work/blogs/2024/sakila_where_are_you_going/sysbench/base"
@@ -18,15 +18,15 @@ destinationPath="D:\\work\\percona\\Tech_Lead\\Projects\\Benchmarking_procedures
 #csvDestinationPath="D:\\work\\percona\\Tech_Lead\\Projects\\Benchmarking_procedures\\benchmarking_on_hetzner\\results\\all\\csv\\small"
 csvDestinationPath=""
 printStats=false
-printData=true
+printData=false
 convertChartsToCsv=true
-printCharts=true
+printCharts=false
 
 httpServerPort=8089
 httpServerIp="localhost"
 #labels=""
-labels="TotalTime"
-#labels="operations/s,latencyPct95(μs)"
+#labels="TotalTime"
+labels="operations/s"
 #labels="latencyPct95(μs),Latency(ms) min, Latency(ms) max, Latency(ms) avg, Latency(ms) sum"
 #labels="TotalTime,Events/s,operations/s,writes/s,reads/s,latencyPct95(μs)"
 statslabels="operations/s,latencyPct95(μs)"
@@ -56,8 +56,8 @@ logFile = "/Users/marcotusa/tmp/sysbench_graph_creator.log"
 color=[
     "name=Percona;version=8.0;color=#0e1a53"
     ,"name=Percona;version=9.5;color=#117e1a"
-    ,"name=Percona;version=9.2;color=#184f1d"
-    ,"name=Percona;version=9.3;color=#36763c"
+    ,"name=Percona;version=9.1;color=#184f1d"
+    ,"name=Percona;version=9.7;color=#36763c"
     ,"name=Percona;version=9.4;color=#27842f"
     ,"name=Percona;version=8.4.3;color=#ff7e1a"
     ,"name=Percona;version=8.4.4;color=#6db8f2"
@@ -65,11 +65,11 @@ color=[
     ,"name=Percona;version=5.7;color=#f0b336"
     ,"name=MySQL;version=5.7;color=#bac0cd"
     ,"name=MySQL;version=8.0;color=#93c7ff"
-    ,"name=MySQL;version=8.4;color=#f9a98a"
-    ,"name=MySQL;version=8.4.7;color=#9af98a"
-    ,"name=MySQL;version=8.4.5;color=#69e255"
-    ,"name=MySQL;version=9.1;color=#cc3a00"
-    ,"name=MySQL;version=9.2;color=#f0ca6c"
+    ,"name=MySQL;version=8.4.1;color=#f9a98a"
+    ,"name=MySQL;version=8.4.3;color=#9af98a"
+    ,"name=MySQL;version=8.4.2;color=#69e255"
+    ,"name=MySQL;version=8.4.5;color=#cc3a00"
+    ,"name=MySQL;version=9.7;color=#f0ca6c"
     ,"name=MySQL;version=9.3;color=#f2d99b"
     ,"name=MySQL;version=9.5;color=#f02505"
     ,"name=Maria;version=11.8;color=#f29d00"
