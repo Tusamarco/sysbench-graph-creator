@@ -35,7 +35,13 @@ go build .
 ```sh
 ./sysbench_graph_creator -input sysbench_output.txt -output graph.png
 ```
-
+or more advance example
+```
+./sysbench-graph-creator --configfile=config-dev-marco.toml --configpath=/opt/sysbench-graph-creator/config/ \
+--sourceDataPath=/opts/Results_archive/ps_vs_pxc_chaos/tpcc_fully_sync --destinationPath=/opt/Results_archive/ps_vs_pxc_chaos/output \
+--labels="operations/s" --filterByPrePost="" --filterByVersion="8.0,8.4,9" --filterExcludeByTitle="" --filterByProducer="" \
+--testName="CHAOS tpcc PXC VS PS No stale reads"  --convertCsv=true --printCharts=true --printData=true
+```
 Replace `sysbench_output.txt` with the path to your sysbench output file and `graph.png` with your desired graph output file.
 
 ### Options
